@@ -1,0 +1,6 @@
+# Ignorar as configurações do VS Code
+.vscode/
+
+# Ignorar arquivos de build
+Game.exe
+*.o
