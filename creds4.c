@@ -1,3 +1,4 @@
+// gcc creds4.c -o creditosv4 -lraylib -lm  --> cd "pasta onde ta o arquivo" e usa esse comando ai(nao sei como é no windows)
 #include "raylib.h"
 #include <stdbool.h>
 #include <math.h>
