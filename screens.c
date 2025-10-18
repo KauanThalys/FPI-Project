@@ -2,16 +2,10 @@
 #include "raylib.h"
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+#include "screens.h"
 
-typedef enum GameScreen { MENU, CREDITS } GameScreen;
-typedef enum CreditsState { LOGO_FADE_IN, LOGO_HOLD, ROLLING_CREDITS } CreditsState;
-typedef struct {
-    Texture2D texture;
-    bool loaded;
-} LogoData;
 void DrawSolidBlackBackground() {
     ClearBackground(BLACK); 
     DrawRectangleGradientV(0, 0, SCREEN_WIDTH, 150, Fade(BLACK, 0.9f), Fade(BLACK, 0.0f));
@@ -77,10 +71,13 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
         }
     }
 
+ // screens.c: Dentro da função DrawCreditsScreen, substitua o bloco 'if (*creditsState == ROLLING_CREDITS)'
+
     if (*creditsState == ROLLING_CREDITS) {
         *scrollY -= 0.8f; // velocidade da rolagem
         int currentY = *scrollY;
         
+        // [CÓDIGO DE DESENHO DO LOGO FALLBACK (MANTIDO)]
         float logoHeight = 0;
         if (logo->loaded) {
             float maxWidth = 500.0f, maxHeight = 300.0f;
@@ -99,47 +96,89 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
         
         currentY += logoHeight + 100;
         
-        //nomes nos creditos(alterar antes de entregar)
+        // --- 1. DECLARAÇÃO DO ARRAY CORRIGIDA (4 INTEGRANTES E FERRAMENTAS LIMPAS) ---
         const char *creditSections[][20] = {
-            {"DESENVOLVIMENTO", "", "Programador Principal", "Seu Nome", "", "Gameplay Designer", "Nome Colega 1", "END"},
-            {"DESIGN E ARTE", "", "Artista Conceitual", "Nome Artista", "", "UI/UX Designer", "Nome Designer", "END"},
-            {"ÁUDIO", "", "Compositor", "Nome Compositor", "", "Efeitos Sonoros", "Nome Sound Designer", "END"},
-            {"AGRADECIMENTOS ESPECIAIS", "", "Professor", "Nome do Professor", "", "Universidade", "Sua Universidade", "END"},
-            {"FERRAMENTAS UTILIZADAS", "", "Engine Gráfica", "Raylib 5.0", "", "Linguagem", "C (C99)", "END"},
-            {"", "", "Obrigado por jogar!", "TALES OF CINERIA © 2025", "END"}
+            // SEÇÃO 0: INTEGRANTES DO GRUPO (Formato Nome/Nome/Nome... - Uma Coluna)
+            {"INTEGRANTES DO GRUPO", "Alvaro Lima <amol>", "Joao Drummond <jgada>", "Pedro Albuquerque <phma2>", "Kauan Thalys <ktn>", "END"},
+            
+            // SEÇÃO 1: DESIGN E ARTE
+            {"DESIGN E ARTE", "Artista Conceitual", "Nome Artista", "UI/UX Designer", "Nome Designer", "END"},
+            
+            // SEÇÃO 2: ÁUDIO
+            {"ÁUDIO", "Compositor", "Nome Compositor", "Efeitos Sonoros", "Nome Sound Designer", "END"},
+            
+            // SEÇÃO 3: AGRADECIMENTOS ESPECIAIS
+            {"AGRADECIMENTOS ESPECIAIS", "Professor", "Alexandre Cabral Mota", "Universidade", "Universidade Federal de Pernambuco", "END"},
+            
+            // SEÇÃO 4: FERRAMENTAS UTILIZADAS (Rótulo/Valor Adjacentes)
+            {"FERRAMENTAS UTILIZADAS", "Engine Gráfica", "Raylib 5.0", "Linguagem", "C (C99)", "END"},
+            
+            // SEÇÃO 5: MENSAGEM FINAL (Obrigado por jogar!)
+            {"Obrigado por jogar!", "TALES OF CINERIA © 2025", "END"}
         };
         
         int numSections = 6;
         
+        // --- 2. LOOP PRINCIPAL DE DESENHO (Lógica Central) ---
         for (int s = 0; s < numSections; s++) {
-            bool alignRight = (s % 2 == 0);  
+            bool alignRight = (s % 2 == 0); // Alinhamento da Seção (o título ímpar alinha à esquerda)
             
-            for (int i = 0; creditSections[s][i][0] != 'E'; i++) {
-                if (creditSections[s][i][0] == '\0') { currentY += 20; continue; }
+            for (int i = 0; strcmp(creditSections[s][i], "END") != 0; i++) { // Loop corrigido para buscar "END"
+                
+                // Ignora o primeiro item se for string vazia (não deve mais acontecer)
+                // if (creditSections[s][i][0] == '\0') { currentY += 20; continue; } 
 
                 int fontSize = 20;
                 Color textColor = WHITE;
                 int posX = 0;
                 
+                // --- DEFINIÇÃO DE ESTILO E POSIÇÃO ---
+                
+                // 1. Estilo TÍTULO da Seção (i=0, exceto a última)
                 if (i == 0 && s < numSections - 1) { 
                     fontSize = 30;
-                    textColor = (Color){207, 181, 59, 255}; 
+                    textColor = (Color){207, 181, 59, 255}; // Ouro
                     posX = alignRight ? SCREEN_WIDTH - 100 - MeasureText(creditSections[s][i], fontSize) : 100;
-                } else if (i % 2 != 0) { 
-                    fontSize = 18;
-                    textColor = (Color){122, 122, 122, 255}; 
+                } 
+                else if (s == 0) {
+                    if (i > 0) { // Se não for o Título, use o estilo uniforme
+                    fontSize = 20; // Uniforme
+                    textColor = (Color){255, 140, 0, 255}; // Uniforme
                     posX = alignRight ? SCREEN_WIDTH - 100 - MeasureText(creditSections[s][i], fontSize) : 100;
-                } else { 
-                    fontSize = 22;
-                    textColor = (Color){255, 140, 0, 255}; 
+                    }
+                }
+                // 2. Estilo ITENS DE CONTEÚDO (i > 0)
+                else {    
+                    // LÓGICA DE SOBREPOSIÇÃO PARA ESTILOS ESPECÍFICOS (FERRAMENTAS / PADRÃO)
+                    if (s == 4) { // Seção FERRAMENTAS UTILIZADAS
+                        if (i % 2 != 0) { // RÓTULO (Engine Gráfica, Linguagem)
+                            fontSize = 22;
+                            textColor = (Color){255, 140, 0, 255}; // Laranja
+                        } else { // VALOR (Raylib 5.0, C(C99))
+                            fontSize = 18;
+                            textColor = (Color){122, 122, 122, 255}; // Cinza
+                        }
+                    } else { // Lógica Padrão do Colega (e INTEGRANTES)
+                        if (i % 2 != 0) { // Item ÍMPAR (Nome do Colega, Cor Cinza)
+                            fontSize = 18;
+                            textColor = (Color){122, 122, 122, 255}; 
+                        } else { // Item PAR (Cargo/Rótulo, Cor Laranja)
+                            fontSize = 22;
+                            textColor = (Color){255, 140, 0, 255}; 
+                        }
+                    }
+
+                    // Posição X (Para Itens, usa o estilo da Seção)
                     posX = alignRight ? SCREEN_WIDTH - 100 - MeasureText(creditSections[s][i], fontSize) : 100;
                 }
                 
+                // 3. Estilo Mensagem Final (Sobrescreve tudo para centralizar)
                 if (s == numSections - 1) { 
                     posX = SCREEN_WIDTH/2 - MeasureText(creditSections[s][i], fontSize)/2;
                     textColor = (i == 0) ? (Color){220, 20, 60, 255} : WHITE;
                 }
 
+                // [CÓDIGO DE FADE E DRAW (MANTIDO)]
                 float alpha = 1.0f;
                 if (currentY < 150) alpha = (currentY - 50) / 100.0f;
                 else if (currentY > SCREEN_HEIGHT - 150) alpha = (SCREEN_HEIGHT - 50 - currentY) / 100.0f;
@@ -149,11 +188,16 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
                     DrawText(creditSections[s][i], posX, currentY, fontSize, Fade(textColor, alpha));
                 }
                 
-                currentY += (i % 2 == 0 && i > 0) ? 50 : 35; 
+                // --- 4. CÁLCULO DE ESPAÇAMENTO Y ---
+                if (s == 0) { 
+                    currentY += 35; // CORREÇÃO: Espaçamento de 35px para lista de nomes
+                } else {
+                    currentY += (i % 2 == 0 && i > 0) ? 50 : 35; // Lógica de duas colunas para o resto
+                }
             }
-            currentY += 100; 
+            currentY += 100; // Espaço entre as seções
         }
-
+        
         // reinicia os creditos qnd terminar
         if (*scrollY < -(currentY - (int)*scrollY + 200)) {
             *creditsState = LOGO_FADE_IN;
@@ -176,84 +220,39 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
     DrawText("ESC", SCREEN_WIDTH - 50, SCREEN_HEIGHT - 30, 15, DARKGRAY);
 }
 
+void UpdateMenuScreen(GameScreen *currentScreen) {
+    Rectangle btnCredits = {SCREEN_WIDTH/2 - 125, 300, 250, 50};
+    Rectangle btnGame = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
+    Rectangle btnExit = {SCREEN_WIDTH/2 - 125, 380, 250, 50};
+    if (CheckCollisionPointRec(GetMousePosition(), btnCredits) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = CREDITS;
+    }
+    if (CheckCollisionPointRec(GetMousePosition(), btnGame) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = GAME;
+    }
+    if (CheckCollisionPointRec(GetMousePosition(), btnExit) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = EXIT;
+    }
+}
+
 void DrawMenuScreen(GameScreen *currentScreen) {
     ClearBackground((Color){10, 10, 20, 255});
     DrawText("TALES OF CINERIA", SCREEN_WIDTH/2 - MeasureText("TALES OF CINERIA", 50)/2, 100, 50, GOLD);
-
-    Rectangle btnCredits = {SCREEN_WIDTH/2 - 125, 300, 250, 50};
-    bool hover = CheckCollisionPointRec(GetMousePosition(), btnCredits);
     
-    DrawRectangleRec(btnCredits, hover ? DARKBLUE : BLUE);
+    Rectangle btnGame = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
+    Rectangle btnCredits = {SCREEN_WIDTH/2 - 125, 300, 250, 50};  
+    Rectangle btnExit = {SCREEN_WIDTH/2 - 125, 380, 250, 50}; 
+
+    bool hoverGame = CheckCollisionPointRec(GetMousePosition(), btnGame); 
+    bool hoverCredits = CheckCollisionPointRec(GetMousePosition(), btnCredits); 
+    bool hoverExit = CheckCollisionPointRec(GetMousePosition(), btnExit); 
+
+    DrawRectangleRec(btnGame, hoverGame ? DARKBLUE : BLUE);
+    DrawText("JOGAR", btnGame.x + 65, btnGame.y + 15, 20, WHITE);
+
+    DrawRectangleRec(btnCredits, hoverCredits ? DARKBLUE : BLUE);
     DrawText("CRÉDITOS", btnCredits.x + 65, btnCredits.y + 15, 20, WHITE);
 
-    if (hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        *currentScreen = CREDITS;
-    }
+    DrawRectangleRec(btnExit, hoverExit ? DARKBLUE : BLUE);
+    DrawText("SAIR", btnExit.x + 65, btnExit.y + 15, 20, WHITE);
 }
-
-int main(void) {
-    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tales of Cineria");
-    SetTargetFPS(60);
-
-    GameScreen currentScreen = MENU;
-    
-    CreditsState creditsState = LOGO_FADE_IN;
-    float creditsScrollY = SCREEN_HEIGHT;
-    float logoAlpha = 0.0f;
-    float stateTimer = 0.0f;
-    float particleTimer = 0.0f;
-
-    LogoData logo = {0};
-    logo.loaded = false;
-    const char* logoPaths[] = {"logo.png", "logo.jpg", "assets/logo.png"};
-    for (int i = 0; i < 3; i++) {
-        if (FileExists(logoPaths[i])) {
-            logo.texture = LoadTexture(logoPaths[i]);
-            logo.loaded = true;
-            break;
-        }
-    }
-
-    while (!WindowShouldClose()) {
-        bool returnToMenu = false;
-
-        switch (currentScreen) {
-            case MENU:
-                break;
-            case CREDITS:
-                if (IsKeyPressed(KEY_ESCAPE)) {
-                    returnToMenu = true;
-                }
-                break;
-        }
-
-        BeginDrawing();
-
-        if (currentScreen == MENU) {
-            DrawMenuScreen(&currentScreen);
-            
-            if (currentScreen == CREDITS) {
-                 creditsState = LOGO_FADE_IN;
-                 creditsScrollY = SCREEN_HEIGHT;
-                 logoAlpha = 0.0f;
-                 stateTimer = 0.0f;
-            }
-        } else if (currentScreen == CREDITS) {
-            DrawCreditsScreen(&creditsScrollY, &returnToMenu, &creditsState, &logoAlpha, &stateTimer, &particleTimer, &logo);
-            
-            if (returnToMenu) {
-                currentScreen = MENU;
-            }
-        }
-
-        EndDrawing();
-    }
-
-    if (logo.loaded) {
-        UnloadTexture(logo.texture);
-    }
-
-    CloseWindow();
-    return 0;
-}
-

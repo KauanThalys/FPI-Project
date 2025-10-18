@@ -2,7 +2,7 @@
 TARGET = Game.exe
 
 # Arquivos de origem
-SRCS = main.c player.c boss.c
+SRCS = main.c screens.c
 
 # Include e Library paths da raylib
 RAYLIB_PATH = C:/raylibb
