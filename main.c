@@ -3,80 +3,200 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "screens.h" // Inclua o contrato do novo módulo
+//headers 
+#include "screens.h" 
+#include "resources.h"
+#include "input.h"
+#include "graphics.h"
+#include "game.h"
 
+//  função de desenho 
+extern void Graphics_DrawLevelComplete(void);
 
 int main() {
+    // ----------------------------------------------------------------------------------
+    // Inicialização
+    // ----------------------------------------------------------------------------------
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tales of Cineria");
     SetTargetFPS(60);
+    InitAudioDevice(); 
 
-    GameScreen currentScreen = MENU;
+    // status Inicial
+    GameScreen telaAtual = MENU;
+    GameScreen telaAnterior = MENU; 
     
-    CreditsState creditsState = LOGO_FADE_IN;
-    float creditsScrollY = SCREEN_HEIGHT;
-    float logoAlpha = 0.0f;
-    float stateTimer = 0.0f;
-    float particleTimer = 0.0f;
+    // Créditos
+    CreditsState estadoCreditos = LOGO_FADE_IN;
+    float scrollCreditos = SCREEN_HEIGHT;
+    float alphaLogo = 0.0f;
+    float timerEstado = 0.0f;
+    float timerParticulas = 0.0f;
 
+    // Variáveis da Intro da Fase
+    float timerIntro = 0.0f;
+    const float duracaoIntro = 3.0f; 
+    int faseIntro = 1;
+
+    // Variável para Transição de Nível 
+    float timerTransicao = 0.0f;
+
+    // Recursos
     LogoData logo = {0};
-    logo.loaded = false;
-    const char* logoPaths[] = {"logo.png", "logo.jpg", "assets/logo.png"};
-    for (int i = 0; i < 3; i++) {
-        if (FileExists(logoPaths[i])) {
-            logo.texture = LoadTexture(logoPaths[i]);
-            logo.loaded = true;
-            break;
-        }
-    }
+    Resources_LoadLogo(&logo);
+    Resources_LoadTileset("assets/medieval_tileset.png");
 
+    // Inicializa o jogo 
+    Jogo_Iniciar();
+
+    // ----------------------------------------------------------------------------------
+    // Loop Principal
+    // ----------------------------------------------------------------------------------
     while (!WindowShouldClose()) {
-        bool returnToMenu = false;
+        
+        bool voltarAoMenuDeCreditos = false;
+        GameScreen estadoInicioFrame = telaAtual;
 
-        switch (currentScreen) {
+        switch (telaAtual) {
             case MENU:
-                UpdateMenuScreen(&currentScreen); // Executa a lógica do mouse/input
-                if (currentScreen == CREDITS) {
-                    creditsState = LOGO_FADE_IN;
-                    creditsScrollY = SCREEN_HEIGHT;
-                    logoAlpha = 0.0f;
-                    stateTimer = 0.0f;
+                Input_HandleMenu(&telaAtual);
+
+                // Iniciar Jogo do Zero
+                if (telaAtual == GAME && estadoInicioFrame == MENU) {
+                    telaAtual = STAGE_INTRO;
+                    timerIntro = 0.0f;
+                    faseIntro = 1; 
+                    Jogo_IniciarFase(1); // Reseta tudo para fase 1
+                }
+                
+                // Ir para Créditos
+                if (telaAtual == CREDITS && estadoInicioFrame == MENU) {
+                    estadoCreditos = LOGO_FADE_IN;
+                    scrollCreditos = SCREEN_HEIGHT;
+                    alphaLogo = 0.0f;
+                    timerEstado = 0.0f;
                 }
                 break;
+
+            case STAGE_INTRO:
+                timerIntro += GetFrameTime();
+                // Permite pular a intro com Espaço ou Clique
+                if ((timerIntro > 0.5f && (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_UP) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON))) 
+                    || timerIntro >= duracaoIntro) {
+                    
+                    telaAtual = GAME;
+                }
+                break;
+
             case GAME:
-                currentScreen = MENU;
-                // Lógica do jogo (a ser implementada)
+                // O Jogo_Atualizar verifica a porta e pode mudar telaAtual para LEVEL_TRANSITION
+                Jogo_Atualizar(&telaAtual); 
                 break;
-            case CREDITS:
-                if (IsKeyPressed(KEY_ESCAPE)) {
-                    returnToMenu = true;
+
+            // --- LÓGICA DE PASSAGEM DE FASE ---
+            case LEVEL_TRANSITION:
+                timerTransicao += GetFrameTime();
+                
+                // Espera 3 segundos mostrando "FASE CONCLUÍDA"
+                if (timerTransicao > 3.0f) {
+                    timerTransicao = 0.0f;
+                    
+                    // Pega o nível que foi incrementado no game.c 
+                    int proximoNivel = Jogo_ObterEstado()->level;
+                    
+                    // Carrega o mapa da próxima fase e reseta o player
+                    Jogo_IniciarFase(proximoNivel);
+                    
+                    // Prepara a Intro para mostrar o título da nova fase
+                    faseIntro = proximoNivel;
+                    timerIntro = 0.0f;
+                    
+                    // Volta para o fluxo de Intro -> Game
+                    telaAtual = STAGE_INTRO; 
                 }
                 break;
+
+            case CREDITS:
+                if (Input_IsEscapePressed()) {
+                    voltarAoMenuDeCreditos = true;
+                }
+                break;
+
             case EXIT:
-                CloseWindow();
-                return 0;
+                break;
         }
 
-        BeginDrawing();
+        if (telaAtual == EXIT) break;
 
-        ClearBackground(BLACK); 
+        if (voltarAoMenuDeCreditos) {
+            telaAtual = MENU;
+        }
 
-        if (currentScreen == MENU) {
-            DrawMenuScreen(&currentScreen);
-        } else if (currentScreen == CREDITS) {
-            DrawCreditsScreen(&creditsScrollY, &returnToMenu, &creditsState, &logoAlpha, &stateTimer, &particleTimer, &logo);
-            
-            if (returnToMenu) {
-                currentScreen = MENU;
+        // ------------------------------------------------------------------------------
+        // GERENCIAMENTO DE JANELA (Fullscreen sem bordas)
+        // ------------------------------------------------------------------------------
+        if (telaAtual != estadoInicioFrame) {
+            bool modoJogo = (telaAtual == STAGE_INTRO || telaAtual == GAME || telaAtual == LEVEL_TRANSITION);
+            bool estavaMenu = (estadoInicioFrame == MENU || estadoInicioFrame == CREDITS);
+
+            // Entrando no jogo -> Tela Cheia
+            if (modoJogo && estavaMenu) {
+                int monitor = GetCurrentMonitor();
+                int mw = GetMonitorWidth(monitor);
+                int mh = GetMonitorHeight(monitor);
+                SetWindowState(FLAG_WINDOW_UNDECORATED);
+                SetWindowSize(mw, mh);
+                SetWindowPosition(0, 0);
+            }
+            // Voltando pro menu -> Janela Normal
+            else if (telaAtual == MENU) {
+                if (IsWindowState(FLAG_WINDOW_UNDECORATED)) {
+                    ClearWindowState(FLAG_WINDOW_UNDECORATED);
+                    int monitor = GetCurrentMonitor();
+                    int mw = GetMonitorWidth(monitor);
+                    int mh = GetMonitorHeight(monitor);
+                    SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+                    SetWindowPosition((mw - SCREEN_WIDTH) / 2, (mh - SCREEN_HEIGHT) / 2);
+                }
             }
         }
+
+        telaAnterior = telaAtual;
+
+        // ------------------------------------------------------------------------------
+        // DRAW (Desenho)
+        // ------------------------------------------------------------------------------
+        BeginDrawing();
+            
+            ClearBackground(BLACK); 
+
+            if (telaAtual == MENU) {
+                Graphics_DrawMenu(&telaAtual);
+            } 
+            else if (telaAtual == STAGE_INTRO) {
+                Graphics_DrawStageIntro(faseIntro, timerIntro);
+            } 
+            else if (telaAtual == GAME) {
+                Graphics_DrawGame(Jogo_ObterEstado());
+            } 
+            else if (telaAtual == LEVEL_TRANSITION) {
+                // Desenha a tela de sucesso 
+                Graphics_DrawLevelComplete();
+            }
+            else if (telaAtual == CREDITS) {
+                Graphics_DrawCredits(&scrollCreditos, &voltarAoMenuDeCreditos, &estadoCreditos, &alphaLogo, &timerEstado, &timerParticulas, &logo);
+            }
 
         EndDrawing();
     }
 
-    if (logo.loaded) {
-        UnloadTexture(logo.texture);
-    }
-
+    // ----------------------------------------------------------------------------------
+    // Finalização
+    // ----------------------------------------------------------------------------------
+    Resources_UnloadLogo(&logo);
+    Resources_UnloadTileset();
+    Jogo_Descarregar();
+    CloseAudioDevice();
     CloseWindow();
+
     return 0;
 }

@@ -1,4 +1,5 @@
-// gcc creds4.c -o creditosv4 -lraylib -lm  --> cd "pasta onde ta o arquivo" e usa esse comando ai(nao sei como é no windows)
+#include <stdio.h>
+// Arquivo de telas: menu, créditos e helpers de desenho.
 #include "raylib.h"
 #include <stdbool.h>
 #include <math.h>
@@ -14,10 +15,12 @@ void DrawSolidBlackBackground() {
 void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *creditsState, float *logoAlpha, float *stateTimer, float *particleTimer, LogoData *logo) {
     DrawSolidBlackBackground();
 
+    // Atualiza timers usados na animação dos créditos
     *particleTimer += GetFrameTime(); 
     *stateTimer += GetFrameTime();
     switch (*creditsState) {
         case LOGO_FADE_IN:
+            // Fade in da logo
             *logoAlpha += GetFrameTime() * 0.8f;
             if (*logoAlpha >= 1.0f) {
                 *logoAlpha = 1.0f;
@@ -26,6 +29,7 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
             }
             break;
         case LOGO_HOLD:
+            // Mantém a logo visível por um intervalo antes da rolagem
             if (*stateTimer >= 2.5f) { 
                 *creditsState = ROLLING_CREDITS;
                 *stateTimer = 0.0f;
@@ -228,6 +232,7 @@ void UpdateMenuScreen(GameScreen *currentScreen) {
         *currentScreen = CREDITS;
     }
     if (CheckCollisionPointRec(GetMousePosition(), btnGame) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        // Ir para o jogo (a gestão de fullscreen é feita em main.c)
         *currentScreen = GAME;
     }
     if (CheckCollisionPointRec(GetMousePosition(), btnExit) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
