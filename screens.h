@@ -11,7 +11,7 @@
 #define SCREEN_HEIGHT 600
 
 // 1. Tipos de Estado (GameScreen e CreditsState) - Crucial para a main
-typedef enum GameScreen { MENU, GAME, CREDITS, EXIT } GameScreen;
+typedef enum GameScreen { MENU, GAME, CREDITS, EXIT, GAME_OVER, } GameScreen;
 typedef enum CreditsState { LOGO_FADE_IN, LOGO_HOLD, ROLLING_CREDITS } CreditsState;
 typedef struct {
     Texture2D texture;
@@ -20,9 +20,11 @@ typedef struct {
 
 // 2. Protótipos das funções que a main usará para desenhar/atualizar
 // O protótipo deve retornar o próximo estado do jogo (GameScreen)
-GameScreen UpdateCreditsScreen(GameScreen currentScreen);
-void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *creditsState, float *logoAlpha, float *stateTimer, float *particleTimer, LogoData *logo);
+void UpdateCreditsScreen(GameScreen *currentScreen);
+void DrawCreditsScreen(float *scrollY, GameScreen *currentScreen, CreditsState *creditsState, float *logoAlpha, float *stateTimer, float *particleTimer, LogoData *logo);
 void UpdateMenuScreen(GameScreen *currentScreen);
 void DrawMenuScreen(GameScreen *currentScreen);
+void UpdateGameOver(GameScreen *currentScreen);
+void DrawGameOver(GameScreen *currentScreen);
 
 #endif // SCREENS_H

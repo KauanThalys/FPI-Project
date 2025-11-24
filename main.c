@@ -18,6 +18,10 @@ int main() {
     float stateTimer = 0.0f;
     float particleTimer = 0.0f;
 
+    float gameTimer = 0.0f;
+    bool gameRunning = false;
+
+    Texture2D gamePlaceholderTexture = LoadTexture("assets/max.png");
     LogoData logo = {0};
     logo.loaded = false;
     const char* logoPaths[] = {"logo.png", "logo.jpg", "assets/logo.png"};
@@ -30,8 +34,6 @@ int main() {
     }
 
     while (!WindowShouldClose()) {
-        bool returnToMenu = false;
-
         switch (currentScreen) {
             case MENU:
                 UpdateMenuScreen(&currentScreen); // Executa a lógica do mouse/input
@@ -41,33 +43,69 @@ int main() {
                     logoAlpha = 0.0f;
                     stateTimer = 0.0f;
                 }
+                if(currentScreen == GAME){
+                    gameTimer = 0.0f;
+                    gameRunning = true;
+                }                
                 break;
             case GAME:
-                currentScreen = MENU;
-                // Lógica do jogo (a ser implementada)
+                if (gameRunning) {
+                    gameTimer += GetFrameTime(); // <--- AGORA O TIMER ATUALIZA!
+                    // CONDIÇÃO DE GAME OVER (A cada 5 segundos para teste)
+                    if (gameTimer >= 5.0f) {
+                        currentScreen = GAME_OVER;
+                        gameRunning = false; // Pausa a lógica
+                    }
+
+                    // Teste manual de Game Over (Opcional, mas útil)
+                    if (IsKeyPressed(KEY_G)) {
+                        currentScreen = GAME_OVER;
+                        gameRunning = false;
+                    }
+                }
                 break;
             case CREDITS:
-                if (IsKeyPressed(KEY_ESCAPE)) {
-                    returnToMenu = true;
-                }
+                UpdateCreditsScreen(&currentScreen); 
                 break;
             case EXIT:
                 CloseWindow();
                 return 0;
+            case GAME_OVER:
+                UpdateGameOver(&currentScreen);
+                if(currentScreen == GAME){
+                    gameTimer = 0.0f;
+                    gameRunning = true;
+                }
+                else if(currentScreen == MENU) gameRunning = false;
+                break;
         }
 
         BeginDrawing();
 
         ClearBackground(BLACK); 
 
-        if (currentScreen == MENU) {
-            DrawMenuScreen(&currentScreen);
-        } else if (currentScreen == CREDITS) {
-            DrawCreditsScreen(&creditsScrollY, &returnToMenu, &creditsState, &logoAlpha, &stateTimer, &particleTimer, &logo);
-            
-            if (returnToMenu) {
-                currentScreen = MENU;
-            }
+        if (currentScreen == GAME || currentScreen == GAME_OVER) {
+            // Agora desenha a imagem placeholder
+            float scale = 0.7f;
+            int x = SCREEN_WIDTH/2 - (gamePlaceholderTexture.width * scale)/2;
+            int y = SCREEN_HEIGHT/2 - (gamePlaceholderTexture.height * scale)/2;
+            DrawTextureEx(gamePlaceholderTexture, (Vector2){(float)x, (float)y}, 0.0f, scale, WHITE);
+
+            // Desenha o timer por cima da imagem (para mostrar que o jogo estava rodando)
+            DrawText(TextFormat("Tempo: %.1f", gameTimer), 10, 10, 30, YELLOW);
+        } 
+        switch(currentScreen){
+            case MENU:
+                DrawMenuScreen(&currentScreen);
+                break;
+            case CREDITS:
+                DrawCreditsScreen(&creditsScrollY, &currentScreen, &creditsState, &logoAlpha, &stateTimer, &particleTimer, &logo);
+                break;
+            case GAME_OVER:
+                DrawGameOver(&currentScreen);
+                break;
+            default:
+                break;
         }
 
         EndDrawing();
@@ -77,6 +115,7 @@ int main() {
         UnloadTexture(logo.texture);
     }
 
+    UnloadTexture(gamePlaceholderTexture);
     CloseWindow();
     return 0;
 }

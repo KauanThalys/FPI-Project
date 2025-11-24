@@ -11,7 +11,17 @@ void DrawSolidBlackBackground() {
     DrawRectangleGradientV(0, 0, SCREEN_WIDTH, 150, Fade(BLACK, 0.9f), Fade(BLACK, 0.0f));
     DrawRectangleGradientV(0, SCREEN_HEIGHT - 150, SCREEN_WIDTH, 150, Fade(BLACK, 0.0f), Fade(BLACK, 0.9f));
 }
-void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *creditsState, float *logoAlpha, float *stateTimer, float *particleTimer, LogoData *logo) {
+
+//---------------- CREDITS SCREEN FUNCTIONS ----------------//
+void UpdateCreditsScreen(GameScreen *currentScreen) {
+    Rectangle btnBack = {20, SCREEN_HEIGHT - 60, 140, 40};
+    Color btnColor = CheckCollisionPointRec(GetMousePosition(), btnBack) ? DARKGRAY : GRAY;
+    if (CheckCollisionPointRec(GetMousePosition(), btnBack) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = MENU;
+    }
+}
+
+void DrawCreditsScreen(float *scrollY, GameScreen *currentScreen, CreditsState *creditsState, float *logoAlpha, float *stateTimer, float *particleTimer, LogoData *logo) {
     DrawSolidBlackBackground();
 
     *particleTimer += GetFrameTime(); 
@@ -71,13 +81,10 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
         }
     }
 
- // screens.c: Dentro da função DrawCreditsScreen, substitua o bloco 'if (*creditsState == ROLLING_CREDITS)'
-
     if (*creditsState == ROLLING_CREDITS) {
         *scrollY -= 0.8f; // velocidade da rolagem
         int currentY = *scrollY;
-        
-        // [CÓDIGO DE DESENHO DO LOGO FALLBACK (MANTIDO)]
+    
         float logoHeight = 0;
         if (logo->loaded) {
             float maxWidth = 500.0f, maxHeight = 300.0f;
@@ -96,7 +103,6 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
         
         currentY += logoHeight + 100;
         
-        // --- 1. DECLARAÇÃO DO ARRAY CORRIGIDA (4 INTEGRANTES E FERRAMENTAS LIMPAS) ---
         const char *creditSections[][20] = {
             // SEÇÃO 0: INTEGRANTES DO GRUPO (Formato Nome/Nome/Nome... - Uma Coluna)
             {"INTEGRANTES DO GRUPO", "Alvaro Lima <amol>", "Joao Drummond <jgada>", "Pedro Albuquerque <phma2>", "Kauan Thalys <ktn>", "END"},
@@ -210,9 +216,6 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
     // botao de voltar
     Rectangle btnBack = {20, SCREEN_HEIGHT - 60, 140, 40};
     Color btnColor = CheckCollisionPointRec(GetMousePosition(), btnBack) ? DARKGRAY : GRAY;
-    if (CheckCollisionPointRec(GetMousePosition(), btnBack) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        *returnToMenu = true;
-    }
     
     DrawRectangleRec(btnBack, btnColor);
     DrawRectangleLinesEx(btnBack, 2, LIGHTGRAY);
@@ -220,6 +223,7 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
     DrawText("ESC", SCREEN_WIDTH - 50, SCREEN_HEIGHT - 30, 15, DARKGRAY);
 }
 
+//---------------- MENU SCREEN FUNCTIONS ----------------//
 void UpdateMenuScreen(GameScreen *currentScreen) {
     Rectangle btnCredits = {SCREEN_WIDTH/2 - 125, 300, 250, 50};
     Rectangle btnGame = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
@@ -255,4 +259,32 @@ void DrawMenuScreen(GameScreen *currentScreen) {
 
     DrawRectangleRec(btnExit, hoverExit ? DARKBLUE : BLUE);
     DrawText("SAIR", btnExit.x + 65, btnExit.y + 15, 20, WHITE);
+}
+
+//---------------- GAME OVER SCREEN FUNCTIONS ----------------//
+void UpdateGameOver(GameScreen *currentScreen) {
+    Rectangle btnReset = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
+    Rectangle btnMenu = {SCREEN_WIDTH/2 - 125, 300, 250, 50}; 
+
+    if (CheckCollisionPointRec(GetMousePosition(), btnReset) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = GAME; //MUDAR PARA GAME QUANDO TIVER O JOGO
+    }
+    if (CheckCollisionPointRec(GetMousePosition(), btnMenu) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = MENU;
+    }
+}
+void DrawGameOver(GameScreen *currentScreen){
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(BLACK, 0.7f));
+    DrawText("GAME OVER", SCREEN_WIDTH/2 - MeasureText("GAME OVER", 50)/2, 100, 50, RED);
+    Rectangle btnReset = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
+    Rectangle btnMenu = {SCREEN_WIDTH/2 - 125, 300, 250, 50};  
+
+    bool hoverReset = CheckCollisionPointRec(GetMousePosition(), btnReset); 
+    bool hoverMenu = CheckCollisionPointRec(GetMousePosition(), btnMenu); 
+
+    DrawRectangleRec(btnReset, hoverReset ? DARKBLUE : BLUE);
+    DrawText("REINICIAR", btnReset.x + 65, btnReset.y + 15, 20, WHITE);
+
+    DrawRectangleRec(btnMenu, hoverMenu ? DARKBLUE : BLUE);
+    DrawText("MENU", btnMenu.x + 65, btnMenu.y + 15, 20, WHITE);
 }
