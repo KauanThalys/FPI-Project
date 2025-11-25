@@ -192,6 +192,23 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
         }
     }
 
+    // --- NOVO: controle vertical por input (W/S) ---
+    // Lê eixo vertical (W/S ou ↑/↓)
+    int ay = Input_GetAxisY();
+    // Desejamos que o input force uma velocidade alvo vertical; isso é combinado com a gravidade
+    float targetVyFromInput = (float)ay * moveSpeed;
+    if (ay != 0) {
+        // usamos aceleração semelhante à do eixo X para chegar ao alvo suavemente
+        if (estado.player.speed.y < targetVyFromInput) {
+            estado.player.speed.y += currentAccel * dt;
+            if (estado.player.speed.y > targetVyFromInput) estado.player.speed.y = targetVyFromInput;
+        } else if (estado.player.speed.y > targetVyFromInput) {
+            estado.player.speed.y -= currentAccel * dt;
+            if (estado.player.speed.y < targetVyFromInput) estado.player.speed.y = targetVyFromInput;
+        }
+    }
+    // ------------------------------------------------
+
     if (Input_IsJumpPressed() && estado.player.canJump) {
         estado.player.speed.y = -jumpSpeed;
         estado.player.canJump = false;
