@@ -1,40 +1,57 @@
+// input.c
 #include "input.h"
 #include "raylib.h"
+#include <stdbool.h>
 
-// Atualiza o estado de entrada por frame. Atualmente é um placeholder
-// mas pode ser estendido para lidar com buffers, remapping ou gamepad.
+/* Atualiza o estado de entrada por frame.
+ * Placeholder: aqui você pode processar buffers, gamepad ou remapping.
+ */
 void Input_Update(void) {
-    // placeholder: pode processar eventos acumulados se necessário
+    /* nada por enquanto */
 }
 
-// Detecta se o jogador pressionou ESC neste frame.
+/* Detecta se a tecla ESC foi pressionada neste frame. */
 bool Input_IsEscapePressed(void) {
     return IsKeyPressed(KEY_ESCAPE);
 }
 
-// Trata a entrada na tela de menu delegando para a função de screens.
-// Mantemos uma função wrapper para manter a separação de responsabilidades.
+/* Encaminha entrada do menu (delegação para screens.c). */
 void Input_HandleMenu(GameScreen *currentScreen) {
     extern void UpdateMenuScreen(GameScreen *currentScreen);
     UpdateMenuScreen(currentScreen);
 }
 
-// Retorna -1/0/+1 conforme as teclas de movimento estiverem pressionadas (A/D ou ←/→).
+/* Eixo horizontal: -1 (esquerda), 0, +1 (direita).
+ * Usa A/D ou ←/→.
+ */
 int Input_GetAxisX(void) {
-    // Usa A/D ou ←/→ para movimento horizontal
     int ax = 0;
-    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) ax -= 1;
+    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))  ax -= 1;
     if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) ax += 1;
     return ax;
 }
 
-// Retorna true se a tecla de pulo foi pressionada neste frame (W apenas).
+/* Eixo vertical: -1 (cima), 0, +1 (baixo).
+ * Usa W/S ou ↑/↓.
+ *
+ * Observação de design:
+ * - Retornar -1 para cima facilita integrar com sistemas onde Y cresce pra baixo.
+ * - Se você usar esse eixo para movimento direto, pode querer normalizar diagonais
+ *   (p.ex. dividir por sqrt(2)) — posso aplicar isso depois se quiser.
+ */
+int Input_GetAxisY(void) {
+    int ay = 0;
+    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))    ay -= 1;   // cima
+    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN))  ay += 1;   // baixo
+    return ay;
+}
+
+/* Pulo: detecta pressionamento inicial (W, Espaço ou ↑). */
 bool Input_IsJumpPressed(void) {
-    // Pulo com W ou Espaço ou Seta pra cima
     return IsKeyPressed(KEY_W) || IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_UP);
 }
 
-// Retorna true se a tecla de pulo está sendo mantida pressionada (W apenas).
+/* Pulo segurado. */
 bool Input_IsJumpHeld(void) {
     return IsKeyDown(KEY_W) || IsKeyDown(KEY_SPACE) || IsKeyDown(KEY_UP);
 }

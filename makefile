@@ -2,7 +2,7 @@
 TARGET = main.exe
 
 # Arquivos de origem
-SRCS = main.c screens.c game.c graphics.c input.c resources.c levels.c
+SRCS = main.c screens.c game.c graphics.c input.c resources.c levels.c audio.c
 
 # Include e Library paths da raylib
 RAYLIB_PATH = C:/raylib/raylib

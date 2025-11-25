@@ -1,106 +1,134 @@
+// main.c
 #include <stdio.h>
-#include "raylib.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
-//headers 
-#include "screens.h" 
+#include "raylib.h"
+#include "screens.h"
 #include "resources.h"
 #include "input.h"
 #include "graphics.h"
 #include "game.h"
+#include "audio.h"
 
-//  função de desenho 
-extern void Graphics_DrawLevelComplete(void);
-
-int main() {
-    // ----------------------------------------------------------------------------------
-    // Inicialização
-    // ----------------------------------------------------------------------------------
+int main(void) {
+    // --- Inicialização ---
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tales of Cineria");
     SetTargetFPS(60);
-    InitAudioDevice(); 
 
-    // status Inicial
-    GameScreen telaAtual = MENU;
-    GameScreen telaAnterior = MENU; 
-    
-    // Créditos
-    CreditsState estadoCreditos = LOGO_FADE_IN;
-    float scrollCreditos = SCREEN_HEIGHT;
-    float alphaLogo = 0.0f;
-    float timerEstado = 0.0f;
-    float timerParticulas = 0.0f;
+    InitAudioDevice();
+    Audio_Init();
+    Audio_SetMasterVolume(0.9f); // ajuste opcional de volume
 
-    // Variáveis da Intro da Fase
+    GameScreen currentScreen = MENU;
+
+    // --- Créditos ---
+    CreditsState creditsState = LOGO_FADE_IN;
+    float creditsScrollY = (float)SCREEN_HEIGHT;
+    float logoAlpha = 0.0f;
+    float stateTimer = 0.0f;
+    float particleTimer = 0.0f;
+    bool returnToMenu = false;
+
+    // --- Intro / transição ---
     float timerIntro = 0.0f;
-    const float duracaoIntro = 3.0f; 
+    const float duracaoIntro = 3.0f;
     int faseIntro = 1;
+    bool showStageIntro = false;
 
-    // Variável para Transição de Nível 
     float timerTransicao = 0.0f;
+    const float duracaoTransicao = 2.0f;
 
-    LogoData logo = {0};
+    // --- Recursos ---
+    LogoData logo = { 0 };
     Resources_LoadLogo(&logo);
     Resources_LoadTileset("assets/medieval_tileset.png");
 
-    // Inicializa o jogo 
     Jogo_Iniciar();
 
-    // ----------------------------------------------------------------------------------
-    // Loop Principal
-    // ----------------------------------------------------------------------------------
+    // --- Loop principal ---
     while (!WindowShouldClose()) {
-        bool returnToMenu = false;
+        float dt = GetFrameTime();
 
+        // --- Atualização ---
+        Input_Update();
+        Audio_Update(currentScreen, dt); // atualização do áudio
+
+        // Lógica por tela
         switch (currentScreen) {
             case MENU:
-                UpdateMenuScreen(&currentScreen); // Executa a lógica do mouse/input
+                Input_HandleMenu(&currentScreen);
                 if (currentScreen == CREDITS) {
                     creditsState = LOGO_FADE_IN;
-                    creditsScrollY = SCREEN_HEIGHT;
+                    creditsScrollY = (float)SCREEN_HEIGHT;
                     logoAlpha = 0.0f;
                     stateTimer = 0.0f;
+                    particleTimer = 0.0f;
                 }
                 break;
 
             case GAME:
-                currentScreen = MENU;
-                // Lógica do jogo (a ser implementada)
+                Jogo_Atualizar(&currentScreen);
+                break;
+
+            case LEVEL_TRANSITION:
+                timerTransicao += dt;
+                if (timerTransicao >= duracaoTransicao) {
+                    EstadoJogo *s = Jogo_ObterEstado();
+                    Jogo_IniciarFase(s->level);
+                    timerTransicao = 0.0f;
+                    currentScreen = GAME;
+                }
                 break;
 
             case CREDITS:
-                if (IsKeyPressed(KEY_ESCAPE)) {
-                    returnToMenu = true;
+                if (Input_IsEscapePressed()) {
+                    currentScreen = MENU;
                 }
                 break;
 
             case EXIT:
+                // Sair do jogo
                 CloseWindow();
                 return 0;
         }
 
+        // --- Renderização ---
         BeginDrawing();
-            
-            ClearBackground(BLACK); 
+        ClearBackground(BLACK);
 
         if (currentScreen == MENU) {
             DrawMenuScreen(&currentScreen);
-        } else if (currentScreen == CREDITS) {
-            DrawCreditsScreen(&creditsScrollY, &returnToMenu, &creditsState, &logoAlpha, &stateTimer, &particleTimer, &logo);
-            
-            if (returnToMenu) {
-                currentScreen = MENU;
+        }
+        else if (currentScreen == CREDITS) {
+            returnToMenu = false;
+            DrawCreditsScreen(&creditsScrollY, &returnToMenu, &creditsState,
+                              &logoAlpha, &stateTimer, &particleTimer, &logo);
+            if (returnToMenu) currentScreen = MENU;
+        }
+        else if (currentScreen == GAME) {
+            if (showStageIntro) {
+                timerIntro += dt;
+                Graphics_DrawStageIntro(faseIntro, timerIntro);
+                if (timerIntro >= duracaoIntro) {
+                    showStageIntro = false;
+                    timerIntro = 0.0f;
+                }
+            } else {
+                Graphics_DrawGame(NULL); // TODO: passar estado real do jogo se necessário
             }
+        }
+        else if (currentScreen == LEVEL_TRANSITION) {
+            Graphics_DrawLevelComplete();
         }
 
         EndDrawing();
     }
 
-    if (logo.loaded) {
-        UnloadTexture(logo.texture);
-    }
-
+    // --- Limpeza ---
+    if (logo.loaded) UnloadTexture(logo.texture);
+    Audio_Unload();
+    CloseAudioDevice();
     CloseWindow();
 
     return 0;
