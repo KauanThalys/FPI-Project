@@ -103,7 +103,7 @@ void Audio_Init(void) {
     musicGame.path  = "assets/game_music.ogg";   // 
     sfxJump.path    = "assets/jump.ogg";        // 
     sfxCollect.path = "assets/collect.wav";      // 
-    sfxHurt.path    = "assets/hurt.wav";         // 
+    sfxHurt.path    = "assets/hurt.wav";         // OK
 
 
     // Carregar
