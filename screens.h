@@ -16,6 +16,7 @@ extern "C" {
 typedef enum GameScreen {
     MENU,
     GAME,
+    GAME_OVER,
     CREDITS,
     LEVEL_TRANSITION,
     EXIT
