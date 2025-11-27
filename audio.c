@@ -43,7 +43,10 @@ static float fadeTo       = 0.0f;
 /* Helper: try load music if file exists */
 static void tryLoadMusic(MusicEntry *m) {
     if (m->loaded) return;
+    // debug: mostrar o path tentando carregar
+    if (m && m->path) TraceLog(LOG_INFO, TextFormat("DEBUG: tryLoadMusic -> %s", m->path));
     if (FileExists(m->path)) {
+        TraceLog(LOG_INFO, TextFormat("DEBUG: FileExists true -> %s", m->path));
         m->music = LoadMusicStream(m->path);
         m->loaded = true;
         SetMusicVolume(m->music, DEFAULT_MUSIC_VOLUME * masterVolume);
@@ -99,9 +102,9 @@ void Audio_Init(void) {
     masterVolume = 1.0f;
 
     // Definir paths
-    musicMenu.path  = "assets/menu_music.ogg";   // 
-    musicGame.path  = "assets/game_music.ogg";   // 
-    sfxJump.path    = "assets/jump.ogg";        // 
+    musicMenu.path  = "assets/menu_music.wav";   // 
+    musicGame.path  = "assets/game_music.wav";   // 
+    sfxJump.path    = "assets/jump.wav";        // 
     sfxCollect.path = "assets/collect.wav";      // 
     sfxHurt.path    = "assets/hurt.wav";         // OK
 

@@ -19,4 +19,11 @@ void Resources_UnloadTileset(void);
 bool Resources_HasTileset(void);
 Texture2D Resources_GetTileset(void);
 
+// Menu background video (looping)
+// Path expected example: "assets/fundo_menu.webm"
+bool Resources_LoadMenuVideo(const char *path);
+void Resources_UnloadMenuVideo(void);
+bool Resources_HasMenuVideo(void);
+Texture2D Resources_GetMenuVideoTexture(void);
+void Resources_UpdateMenuVideo(void);
 #endif // RESOURCES_H

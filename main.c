@@ -43,6 +43,8 @@ int main(void) {
     LogoData logo = { 0 };
     Resources_LoadLogo(&logo);
     Resources_LoadTileset("assets/medieval_tileset.png");
+    // Carrega os frames do menu (extraídos com ffmpeg)
+    Resources_LoadMenuVideo("assets/frames");
 
     Jogo_Iniciar();
 
@@ -127,6 +129,7 @@ int main(void) {
 
     // --- Limpeza ---
     if (logo.loaded) UnloadTexture(logo.texture);
+    Resources_UnloadMenuVideo();
     Audio_Unload();
     CloseAudioDevice();
     CloseWindow();

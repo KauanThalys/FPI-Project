@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "screens.h"
+#include "resources.h"
 
 void DrawSolidBlackBackground(void) {
     ClearBackground(BLACK); 
@@ -238,7 +239,24 @@ void UpdateMenuScreen(GameScreen *currentScreen) {
 }
 
 void DrawMenuScreen(GameScreen *currentScreen) {
-    ClearBackground((Color){10, 10, 20, 255});
+    // Atualiza e desenha vídeo de fundo se houver
+    if (Resources_HasMenuVideo()) {
+        Resources_UpdateMenuVideo();
+        Texture2D vidTex = Resources_GetMenuVideoTexture();
+        if (vidTex.width > 0) {
+            // Ajusta para preencher a tela mantendo proporção
+            float scaleX = (float)SCREEN_WIDTH / (float)vidTex.width;
+            float scaleY = (float)SCREEN_HEIGHT / (float)vidTex.height;
+            float scale = fmaxf(scaleX, scaleY); // cover
+            float drawW = vidTex.width * scale;
+            float drawH = vidTex.height * scale;
+            DrawTextureEx(vidTex, (Vector2){SCREEN_WIDTH/2 - drawW/2, SCREEN_HEIGHT/2 - drawH/2}, 0.0f, scale, WHITE);
+        } else {
+            ClearBackground((Color){10, 10, 20, 255});
+        }
+    } else {
+        ClearBackground((Color){10, 10, 20, 255});
+    }
     DrawText("TALES OF CINERIA", SCREEN_WIDTH/2 - MeasureText("TALES OF CINERIA", 50)/2, 100, 50, GOLD);
     
     Rectangle btnGame = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
