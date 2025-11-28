@@ -21,9 +21,13 @@ SRCS = main.c screens.c game.c graphics.c input.c resources.c levels.c audio.c
 
 # Include e Library paths da raylib
 ifeq ($(DETECTED_OS),Windows)
-	RAYLIB_PATH = C:/raylib/raylib
+	# Tenta múltiplos caminhos comuns no Windows
+	RAYLIB_PATH ?= C:/raylib/raylib
 	CFLAGS = -I$(RAYLIB_PATH)/src
 	LDFLAGS = -L$(RAYLIB_PATH)/src -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32
+	# Se raylib não estiver em C:/raylib, tente ajustar aqui:
+	# RAYLIB_PATH = C:/vcpkg/installed/x64-windows/include
+	# LDFLAGS = -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32
 else
 	RAYLIB_PATH = /usr/local/include
 	CFLAGS = -I$(RAYLIB_PATH)

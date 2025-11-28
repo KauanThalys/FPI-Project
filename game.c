@@ -209,6 +209,7 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
     }
     // ------------------------------------------------
 
+    // Pulo só é possível se o jogador estiver tocando o chão
     if (Input_IsJumpPressed() && estado.player.canJump) {
         estado.player.speed.y = -jumpSpeed;
         estado.player.canJump = false;

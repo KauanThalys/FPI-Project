@@ -7,6 +7,25 @@
 static Texture2D g_tileset = {0};
 static bool g_tilesetLoaded = false;
 
+// Converte caminhos com "/" para o separador correto do SO
+// Aloca nova string, usuário deve fazer free
+static char* NormalizePath(const char *path) {
+    if (!path) return NULL;
+    char *normalized = (char *)malloc(strlen(path) + 1);
+    if (!normalized) return NULL;
+    strcpy(normalized, path);
+    
+#ifdef _WIN32
+    for (int i = 0; normalized[i]; i++) {
+        if (normalized[i] == '/') {
+            normalized[i] = '\\';
+        }
+    }
+#endif
+    
+    return normalized;
+}
+
 // Tenta carregar a logo do jogo a partir de caminhos comuns.
 // Se encontrar, marca `logo->loaded = true` e mantém a textura em `logo->texture`.
 void Resources_LoadLogo(LogoData *logo) {
@@ -14,11 +33,14 @@ void Resources_LoadLogo(LogoData *logo) {
     logo->loaded = false;
     const char* logoPaths[] = {"logo.png", "logo.jpg", "assets/logo.png"};
     for (int i = 0; i < 3; i++) {
-        if (FileExists(logoPaths[i])) {
-            logo->texture = LoadTexture(logoPaths[i]);
+        char *normalized = NormalizePath(logoPaths[i]);
+        if (normalized && FileExists(normalized)) {
+            logo->texture = LoadTexture(normalized);
             logo->loaded = true;
+            free(normalized);
             break;
         }
+        if (normalized) free(normalized);
     }
 }
 
@@ -36,9 +58,15 @@ void Resources_UnloadLogo(LogoData *logo) {
 // Retorna true se carregou com sucesso.
 bool Resources_LoadTileset(const char *path) {
     if (!path) return false;
-    if (!FileExists(path)) return false;
-    g_tileset = LoadTexture(path);
+    char *normalized = NormalizePath(path);
+    if (!normalized) return false;
+    if (!FileExists(normalized)) {
+        free(normalized);
+        return false;
+    }
+    g_tileset = LoadTexture(normalized);
     g_tilesetLoaded = true;
+    free(normalized);
     return true;
 }
 
@@ -69,18 +97,24 @@ static bool g_menuVideoLoaded = false;
 
 bool Resources_LoadMenuVideo(const char *path) {
     if (!path) return false;
-    TraceLog(LOG_INFO, TextFormat("[MenuVideo] Tentando carregar: %s", path));
     
-    if (!DirectoryExists(path)) {
-        TraceLog(LOG_WARNING, TextFormat("[MenuVideo] Diretório não encontrado: %s", path));
+    char *normalized = NormalizePath(path);
+    if (!normalized) return false;
+    
+    TraceLog(LOG_INFO, TextFormat("[MenuVideo] Tentando carregar: %s", normalized));
+    
+    if (!DirectoryExists(normalized)) {
+        TraceLog(LOG_WARNING, TextFormat("[MenuVideo] Diretório não encontrado: %s", normalized));
+        free(normalized);
         return false;
     }
 
-    FilePathList list = LoadDirectoryFiles(path);
-    TraceLog(LOG_INFO, TextFormat("[MenuVideo] Encontrados %d arquivos em %s", list.count, path));
+    FilePathList list = LoadDirectoryFiles(normalized);
+    TraceLog(LOG_INFO, TextFormat("[MenuVideo] Encontrados %d arquivos em %s", list.count, normalized));
     
     if (list.count <= 0) {
         UnloadDirectoryFiles(list);
+        free(normalized);
         return false;
     }
 
@@ -100,6 +134,7 @@ bool Resources_LoadMenuVideo(const char *path) {
     }
     
     UnloadDirectoryFiles(list);
+    free(normalized);
     
     if (g_menuFrameCount > 0) {
         g_menuVideoLoaded = true;

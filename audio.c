@@ -4,6 +4,25 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+
+// Converte caminhos com "/" para o separador correto do SO
+static char* NormalizePath(const char *path) {
+    if (!path) return NULL;
+    char *normalized = (char *)malloc(strlen(path) + 1);
+    if (!normalized) return NULL;
+    strcpy(normalized, path);
+    
+#ifdef _WIN32
+    for (int i = 0; normalized[i]; i++) {
+        if (normalized[i] == '/') {
+            normalized[i] = '\\';
+        }
+    }
+#endif
+    
+    return normalized;
+}
 
 typedef struct {
     Music music;
@@ -43,23 +62,34 @@ static float fadeTo       = 0.0f;
 /* Helper: try load music if file exists */
 static void tryLoadMusic(MusicEntry *m) {
     if (m->loaded) return;
-    // debug: mostrar o path tentando carregar
-    if (m && m->path) TraceLog(LOG_INFO, TextFormat("DEBUG: tryLoadMusic -> %s", m->path));
-    if (FileExists(m->path)) {
-        TraceLog(LOG_INFO, TextFormat("DEBUG: FileExists true -> %s", m->path));
-        m->music = LoadMusicStream(m->path);
-        m->loaded = true;
-        SetMusicVolume(m->music, DEFAULT_MUSIC_VOLUME * masterVolume);
+    if (m && m->path) {
+        char *normalized = NormalizePath(m->path);
+        if (normalized) {
+            TraceLog(LOG_INFO, TextFormat("DEBUG: tryLoadMusic -> %s", normalized));
+            if (FileExists(normalized)) {
+                TraceLog(LOG_INFO, TextFormat("DEBUG: FileExists true -> %s", normalized));
+                m->music = LoadMusicStream(normalized);
+                m->loaded = true;
+                SetMusicVolume(m->music, DEFAULT_MUSIC_VOLUME * masterVolume);
+            }
+            free(normalized);
+        }
     }
 }
 
 /* Helper: try load sfx */
 static void tryLoadSFX(SFXEntry *s) {
     if (s->loaded) return;
-    if (FileExists(s->path)) {
-        s->sound = LoadSound(s->path);
-        s->loaded = true;
-        SetSoundVolume(s->sound, DEFAULT_SFX_VOLUME * masterVolume);
+    if (s && s->path) {
+        char *normalized = NormalizePath(s->path);
+        if (normalized) {
+            if (FileExists(normalized)) {
+                s->sound = LoadSound(normalized);
+                s->loaded = true;
+                SetSoundVolume(s->sound, DEFAULT_SFX_VOLUME * masterVolume);
+            }
+            free(normalized);
+        }
     }
 }
 
