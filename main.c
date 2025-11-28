@@ -17,7 +17,7 @@ int main(void) {
 
     InitAudioDevice();
     Audio_Init();
-    Audio_SetMasterVolume(0.9f); // ajuste opcional de volume
+    Audio_SetMasterVolume(2.0f); // ajuste opcional de volume
 
     GameScreen currentScreen = MENU;
 
