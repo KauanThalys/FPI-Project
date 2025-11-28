@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
 #include "raylib.h"
 #include "screens.h"
 #include "resources.h"
@@ -82,6 +81,13 @@ int main(void) {
                     currentScreen = GAME;
                 }
                 break;
+            case GAME_OVER:
+                    // chama a função de update do painel de Game Over (botões)
+                    UpdateGameOver(&currentScreen);
+                    // permitir voltar com ESC diretamente (opcional)
+                     if (Input_IsEscapePressed()) currentScreen = MENU;
+                break;
+
 
             case CREDITS:
                 if (Input_IsEscapePressed()) {
