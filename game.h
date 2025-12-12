@@ -30,6 +30,25 @@ typedef enum {
     TILE_FIRE = 12
 } TileType;
 
+// --- Estados do Personagem ---
+typedef enum {
+    PLAYER_IDLE = 0,
+    PLAYER_MOVING = 1,
+    PLAYER_JUMPING = 2,
+    PLAYER_CROUCHING = 3,
+    PLAYER_DEAD = 4
+} PlayerState;
+
+// --- Struct para Animação de Sprites ---
+typedef struct {
+    Texture2D *frames;  // Array de texturas (uma por frame)
+    int frameCount;
+    int currentFrame;
+    float frameTimer;
+    float frameDuration;  // Tempo por frame em segundos
+    bool loaded;
+} SpriteAnimation;
+
 // --- Struct Player ---
 typedef struct Player {
     Vector2 position;
@@ -37,7 +56,19 @@ typedef struct Player {
     float width;
     float height;
     Color color;
-    bool canJump;     
+    bool canJump;
+    
+    // Animações
+    SpriteAnimation animIdle;
+    SpriteAnimation animMoving;
+    SpriteAnimation animJumping;
+    SpriteAnimation animCrouching;
+    SpriteAnimation animDead;
+    
+    PlayerState state;
+    PlayerState lastState;
+    bool spritesLoaded;
+    bool facingRight;
 } Player;
 
 // --- Estado Global ---

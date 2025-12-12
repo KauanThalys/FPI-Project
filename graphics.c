@@ -151,8 +151,62 @@ void Graphics_DrawGame(EstadoJogo *state) {
             }
         }
 
-        DrawRectangleV(estadoLocal->player.position, (Vector2){estadoLocal->player.width, estadoLocal->player.height}, estadoLocal->player.color);
-        DrawRectangleLines(estadoLocal->player.position.x, estadoLocal->player.position.y, estadoLocal->player.width, estadoLocal->player.height, WHITE);
+        // Desenhar sprite animado do personagem
+        if (estadoLocal->player.spritesLoaded) {
+            SpriteAnimation *currentAnim = NULL;
+            
+            switch (estadoLocal->player.state) {
+                case PLAYER_IDLE:
+                     if (estadoLocal->player.animIdle.loaded)
+                        currentAnim = &estadoLocal->player.animIdle;
+                    break;
+                case PLAYER_MOVING:
+                    if (estadoLocal->player.animMoving.loaded)
+                        currentAnim = &estadoLocal->player.animMoving;
+                    break;
+                case PLAYER_JUMPING:
+                    if (estadoLocal->player.animJumping.loaded)
+                        currentAnim = &estadoLocal->player.animJumping;
+                    break;
+                case PLAYER_CROUCHING:
+                    if (estadoLocal->player.animCrouching.loaded)
+                        currentAnim = &estadoLocal->player.animCrouching;
+                    break;
+                case PLAYER_DEAD:
+                    if (estadoLocal->player.animDead.loaded)
+                        currentAnim = &estadoLocal->player.animDead;
+                    break;
+                default:
+                    if (estadoLocal->player.animMoving.loaded)
+                        currentAnim = &estadoLocal->player.animMoving;
+            }
+            
+            if (currentAnim && currentAnim->loaded && currentAnim->frameCount > 0) {
+                int frame = currentAnim->currentFrame % currentAnim->frameCount;
+                Texture2D frameTex = currentAnim->frames[frame];
+                
+                if (frameTex.width > 0 && frameTex.height > 0) {
+                    // Source: full frame texture
+                    Rectangle source = {
+                        0, 0,
+                        estadoLocal->player.facingRight ? (float)frameTex.width : -(float)frameTex.width,
+                        (float)frameTex.height
+                    };
+                    
+                    // Destination: scale to fit player bounding box (preserve aspect, center horizontally)
+                    float scale = estadoLocal->player.height / (float)frameTex.height;
+                    float drawW = frameTex.width * scale;
+                    Rectangle dest = {
+                        estadoLocal->player.position.x + (estadoLocal->player.width - drawW) / 2.0f,
+                        estadoLocal->player.position.y,
+                        drawW,
+                        estadoLocal->player.height
+                    };
+                    
+                    DrawTexturePro(frameTex, source, dest, (Vector2){0, 0}, 0.0f, WHITE);
+                }
+            }
+        }
 
     EndMode2D();
 

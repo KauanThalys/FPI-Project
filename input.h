@@ -20,5 +20,7 @@ int Input_GetAxisY(void); // <- importante
 // Pulo
 bool Input_IsJumpPressed(void);
 bool Input_IsJumpHeld(void);
+// Agachar (S ou seta para baixo)
+bool Input_IsCrouchHeld(void);
 
 #endif // INPUT_H

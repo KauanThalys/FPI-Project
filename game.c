@@ -4,6 +4,8 @@
 #include "raylib.h"
 #include <string.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static EstadoJogo estado;
 
@@ -16,10 +18,63 @@ Player CreatePlayer(float x, float y) {
     Player p;
     p.position = (Vector2){ x, y };
     p.speed = (Vector2){ 0, 0 };
-    p.width = 38.0f;
-    p.height = 38.0f;
+    p.width = 42.0f;
+    p.height = 42.0f;
     p.color = RED;
     p.canJump = false;
+    
+    p.state = PLAYER_IDLE;
+    p.lastState = PLAYER_IDLE;
+    p.spritesLoaded = false;
+    p.facingRight = true;
+    
+    // Inicializar animações
+    SpriteAnimation emptyAnim = {.frames = NULL, .frameCount = 0, .currentFrame = 0, .frameTimer = 0.0f, .frameDuration = 0.08f, .loaded = false};
+    p.animIdle = emptyAnim;
+    p.animMoving = emptyAnim;
+    p.animJumping = emptyAnim;
+    p.animCrouching = emptyAnim;
+    p.animDead = emptyAnim;
+    
+    // Helper para carregar animação de uma pasta com frames numerados
+    #define LOAD_ANIM_FROM_DIR(anim, dir, maxFrames) do { \
+        Texture2D *textures = (Texture2D*)malloc(sizeof(Texture2D) * (maxFrames)); \
+        int count = 0; \
+        char pathBuf[512]; \
+        const char *exts[] = {".png", ".jpg", ".jpeg"}; \
+        for (int f = 1; f <= (maxFrames); f++) { \
+            bool found = false; \
+            for (int e = 0; e < 3; e++) { \
+                snprintf(pathBuf, sizeof(pathBuf), "%s/frame_%d%s", (dir), f, exts[e]); \
+                if (FileExists(pathBuf)) { \
+                    Texture2D tex = LoadTexture(pathBuf); \
+                    if (tex.width > 0) { textures[count++] = tex; found = true; break; } \
+                } \
+            } \
+            if (!found) break; \
+        } \
+        if (count > 0) { \
+            (anim).frames = textures; \
+            (anim).frameCount = count; \
+            (anim).currentFrame = 0; \
+            (anim).frameTimer = 0.0f; \
+            (anim).frameDuration = 0.08f; \
+            (anim).loaded = true; \
+        } else { \
+            free(textures); \
+        } \
+    } while(0)
+
+    // Carregar animações de suas respectivas pastas
+    LOAD_ANIM_FROM_DIR(p.animIdle, "assets/sprints/idle", 10);
+    LOAD_ANIM_FROM_DIR(p.animMoving, "assets/sprints/moving", 10);
+    LOAD_ANIM_FROM_DIR(p.animJumping, "assets/sprints/jumping", 10);
+    LOAD_ANIM_FROM_DIR(p.animCrouching, "assets/sprints/crouching", 10);
+    LOAD_ANIM_FROM_DIR(p.animDead, "assets/sprints/dead", 10);
+    
+    #undef LOAD_ANIM_FROM_DIR
+    
+    p.spritesLoaded = true;
     return p;
 }
 
@@ -27,6 +82,62 @@ static bool in_map(int tx, int ty) {
     return tx >= 0 && tx < MAP_W && ty >= 0 && ty < MAP_H; 
 }
 
+// Atualiza a animação do player
+static void UpdatePlayerAnimation(Player *player, float dt) {
+    if (!player || !player->spritesLoaded) return;
+    
+    SpriteAnimation *currentAnim = NULL;
+    
+    switch (player->state) {
+        case PLAYER_IDLE:
+            currentAnim = &player->animIdle;
+            break;
+        case PLAYER_MOVING:
+            currentAnim = &player->animMoving;
+            break;
+        case PLAYER_JUMPING:
+            currentAnim = &player->animJumping;
+            break;
+        case PLAYER_CROUCHING:
+            currentAnim = &player->animCrouching;
+            break;
+        case PLAYER_DEAD:
+            currentAnim = &player->animDead;
+            break;
+        default:
+            // IDLE: não anima, só mostra o primeiro frame
+            currentAnim = &player->animMoving;
+            if (currentAnim->currentFrame != 0) {
+                currentAnim->currentFrame = 0;
+                currentAnim->frameTimer = 0.0f;
+            }
+            return;
+    }
+    
+    if (!currentAnim || !currentAnim->loaded || currentAnim->frameCount <= 0) {
+        return;
+    }
+    
+    // Se trocou de estado, reinicia a animação
+    if (player->state != player->lastState) {
+        currentAnim->currentFrame = 0;
+        currentAnim->frameTimer = 0.0f;
+        player->lastState = player->state;
+    }
+    
+    // Avança o timer da animação
+    currentAnim->frameTimer += dt;
+    if (currentAnim->frameTimer >= currentAnim->frameDuration) {
+        currentAnim->frameTimer = 0.0f;
+        // Advance frame but do NOT loop circularly. When reaching the last frame, hold it.
+        if (currentAnim->currentFrame < currentAnim->frameCount - 1) {
+            currentAnim->currentFrame++;
+        } else {
+            // already at last frame, keep it
+            currentAnim->currentFrame = currentAnim->frameCount - 1;
+        }
+    }
+}
 
 static bool IsTileSolid(int tile) {
     // Se a porta for sólida, a física empurra o jogador para trás antes de detectar a interação.
@@ -171,6 +282,9 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
 
     int ax = Input_GetAxisX();
     float targetVx = (float)ax * moveSpeed;
+    // Ajustar direção que o player está olhando
+    if (ax < 0) estado.player.facingRight = false;
+    else if (ax > 0) estado.player.facingRight = true;
     float currentAccel = estado.player.canJump ? accel : (accel * 0.6f); 
     float currentFriction = estado.player.canJump ? friction : airDrag;
 
@@ -198,6 +312,21 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
         estado.player.speed.y = -jumpSpeed;
         estado.player.canJump = false;
     }
+
+    // Atualizar estado do personagem baseado em input/velocidade
+    if (!estado.player.canJump && estado.player.speed.y != 0) {
+        // Está pulando/caindo
+        estado.player.state = PLAYER_JUMPING;
+    } else if (estado.player.canJump && fabsf(estado.player.speed.x) > 10.0f) {
+        // Está se movendo no chão
+        estado.player.state = PLAYER_MOVING;
+    } else {
+        // Idle (parado no chão)
+        estado.player.state = PLAYER_IDLE;
+    }
+
+    // Atualizar animação do player
+    UpdatePlayerAnimation(&estado.player, dt);
 
     estado.player.speed.y += gravity * dt;
 
