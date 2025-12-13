@@ -36,7 +36,7 @@ Player CreatePlayer(float x, float y) {
     p.animCrouching = emptyAnim;
     p.animDead = emptyAnim;
     
-    // Helper para carregar animação de uma pasta com frames numerados
+    // Carregar animação de uma pasta
     #define LOAD_ANIM_FROM_DIR(anim, dir, maxFrames) do { \
         Texture2D *textures = (Texture2D*)malloc(sizeof(Texture2D) * (maxFrames)); \
         int count = 0; \
@@ -105,7 +105,6 @@ static void UpdatePlayerAnimation(Player *player, float dt) {
             currentAnim = &player->animDead;
             break;
         default:
-            // IDLE: não anima, só mostra o primeiro frame
             currentAnim = &player->animMoving;
             if (currentAnim->currentFrame != 0) {
                 currentAnim->currentFrame = 0;
@@ -129,18 +128,15 @@ static void UpdatePlayerAnimation(Player *player, float dt) {
     currentAnim->frameTimer += dt;
     if (currentAnim->frameTimer >= currentAnim->frameDuration) {
         currentAnim->frameTimer = 0.0f;
-        // Advance frame but do NOT loop circularly. When reaching the last frame, hold it.
         if (currentAnim->currentFrame < currentAnim->frameCount - 1) {
             currentAnim->currentFrame++;
         } else {
-            // already at last frame, keep it
             currentAnim->currentFrame = currentAnim->frameCount - 1;
         }
     }
 }
 
 static bool IsTileSolid(int tile) {
-    // Se a porta for sólida, a física empurra o jogador para trás antes de detectar a interação.
     return (tile == TILE_WALL || tile == TILE_TRIGGER || tile == TILE_TRIANGLE_SPAWNER || tile == TILE_ROCK);
 }
 
@@ -306,7 +302,7 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
         }
     }
 
-    // Pulo: funciona ao pressionar, ou continuamente se segurando e no chão
+    // Pulo
     bool jumpInput = Input_IsJumpPressed() || Input_IsJumpHeld();
     if (jumpInput && estado.player.canJump) {
         estado.player.speed.y = -jumpSpeed;
@@ -315,17 +311,13 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
 
     // Atualizar estado do personagem baseado em input/velocidade
     if (!estado.player.canJump && estado.player.speed.y != 0) {
-        // Está pulando/caindo
         estado.player.state = PLAYER_JUMPING;
     } else if (estado.player.canJump && fabsf(estado.player.speed.x) > 10.0f) {
-        // Está se movendo no chão
         estado.player.state = PLAYER_MOVING;
     } else {
-        // Idle (parado no chão)
         estado.player.state = PLAYER_IDLE;
     }
 
-    // Atualizar animação do player
     UpdatePlayerAnimation(&estado.player, dt);
 
     estado.player.speed.y += gravity * dt;

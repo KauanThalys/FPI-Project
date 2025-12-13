@@ -59,7 +59,6 @@ static float fadeElapsed  = 0.0f;
 static float fadeFrom     = 0.0f;
 static float fadeTo       = 0.0f;
 
-/* Helper: try load music if file exists */
 static void tryLoadMusic(MusicEntry *m) {
     if (m->loaded) return;
     if (m && m->path) {
@@ -77,7 +76,6 @@ static void tryLoadMusic(MusicEntry *m) {
     }
 }
 
-/* Helper: try load sfx */
 static void tryLoadSFX(SFXEntry *s) {
     if (s->loaded) return;
     if (s && s->path) {
@@ -93,19 +91,17 @@ static void tryLoadSFX(SFXEntry *s) {
     }
 }
 
-/* Start playing a music instantly (no fade) */
 static void playMusicImmediate(MusicEntry *mentry, bool loop) {
     if (!mentry || !mentry->loaded) return;
     if (currentMusic) StopMusicStream(*currentMusic);
 
     currentMusic = &mentry->music;
-    currentMusic->looping = loop;  // true = loop infinito, false = toca uma vez
+    currentMusic->looping = loop;
 
     SetMusicVolume(*currentMusic, DEFAULT_MUSIC_VOLUME * masterVolume);
     PlayMusicStream(*currentMusic);
 }
 
-/* Fade to music */
 static void fadeToMusic(MusicEntry *mentry, float durationSeconds, bool loop) {
     if (mentry) tryLoadMusic(mentry);
 
@@ -127,11 +123,9 @@ static void fadeToMusic(MusicEntry *mentry, float durationSeconds, bool loop) {
     }
 }
 
-/* Public API */
 void Audio_Init(void) {
     masterVolume = 1.0f;
 
-    // Definir paths
     musicMenu.path  = "assets/menu_music.wav";   // 
     musicGame.path  = "assets/game_music.wav";   // 
     sfxJump.path    = "assets/jump.wav";        // 
@@ -139,7 +133,6 @@ void Audio_Init(void) {
     sfxHurt.path    = "assets/hurt.wav";         // OK
 
 
-    // Carregar
     tryLoadMusic(&musicMenu);
     tryLoadMusic(&musicGame);
     tryLoadSFX(&sfxJump);
