@@ -18,8 +18,8 @@ Player CreatePlayer(float x, float y) {
     Player p;
     p.position = (Vector2){ x, y };
     p.speed = (Vector2){ 0, 0 };
-    p.width = 42.0f;
-    p.height = 42.0f;
+    p.width = 38.0f;
+    p.height = 38.0f;
     p.color = RED;
     p.canJump = false;
     

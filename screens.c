@@ -116,11 +116,11 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
         currentY += (int)logoHeight + 100;
         
         const char *creditSections[][20] = {
-            {"INTEGRANTES DO GRUPO", "Alvaro Lima <amol>", "Joao Drummond <jgada>", "Pedro Albuquerque <phma2>", "Kauan Thalys <ktn>", "END"},
-            {"DESIGN E ARTE", "Artista Conceitual", "Nome Artista", "UI/UX Designer", "Nome Designer", "END"},
-            {"ÁUDIO", "Compositor", "Nome Compositor", "Efeitos Sonoros", "Nome Sound Designer", "END"},
-            {"AGRADECIMENTOS ESPECIAIS", "Professor", "Alexandre Cabral Mota", "Universidade", "Universidade Federal de Pernambuco", "END"},
-            {"FERRAMENTAS UTILIZADAS", "Engine Gráfica", "Raylib 5.0", "Linguagem", "C (C99)", "END"},
+            {"INTEGRANTES DO GRUPO", "END"},
+            {"LUCAS RYAN<lrsl2>", "Suporte \nTela inicial \nSprites", "END"},
+            {"ÁLVARO MIGUEL", "Sons \nSprites \nSuporte", "END"},
+            {"PEDRO ALBUQUERQUE<amol>", "Coletável \nMapa \nPassagem de nível", "END"},
+            {"JOÃO GABRIEL<jgada>", "Mapas \nLogo \nCréditos", "END"},
             {"Obrigado por jogar!", "TALES OF CINERIA © 2025", "END"}
         };
         
