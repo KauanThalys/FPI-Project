@@ -69,6 +69,9 @@ typedef struct Player {
     PlayerState lastState;
     bool spritesLoaded;
     bool facingRight;
+    // Invulnerabilidade temporária após respawn
+    bool invulnerable;
+    float invulnerableTimer;
 } Player;
 
 // --- Estado Global ---
@@ -81,6 +84,11 @@ typedef struct {
     int keys;
     bool hasExitKey;
     Player player; 
+    // Controle para forçar recentralização da câmera por alguns frames após respawn
+    bool cameraForceCenter;
+    int cameraForceFrames;
+    // Pedido de respawn: quando true, a fase será reiniciada no próximo update
+    bool respawnRequested;
 } EstadoJogo;
 
 // --- Protótipos ---
