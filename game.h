@@ -81,6 +81,7 @@ typedef struct {
     int totalTreasures;
     int score;
     int level;
+    int lastValidLevel;
     int keys;
     bool hasExitKey;
     Player player; 
@@ -100,5 +101,8 @@ void Jogo_IniciarFase(int level);
 void Jogo_Atualizar(GameScreen *currentScreen);
 EstadoJogo* Jogo_ObterEstado(void);
 void Jogo_Descarregar(void);
+int Game_GetCurrentLevel(void);
+int Game_GetScore(void);
+void Game_ResetLevel(int level); // Reinicia o jogo para a fase 'level'
 
 #endif // GAME_H

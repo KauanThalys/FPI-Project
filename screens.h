@@ -44,7 +44,10 @@ void DrawCreditsScreen(float *scrollY, bool *returnToMenu, CreditsState *credits
 
 /* Game over */
 void UpdateGameOver(GameScreen *currentScreen);
-void DrawGameOver(GameScreen *currentScreen);
+void DrawGameOver(GameScreen *currentScreen, int finalScore);
+/* Level Clear */
+void DrawLevelClear(GameScreen *currentScreen, int levelScore);
+void UpdateLevelClear(GameScreen *currentScreen);
 
 #ifdef __cplusplus
 }

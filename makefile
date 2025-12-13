@@ -1,73 +1,39 @@
-.PHONY: all clean extract-frames
+# Makefile - CONFIGURAÇÃO APENAS PARA WINDOWS (Ambiente MinGW/Cygwin)
+# Use este arquivo localmente para compilar.
 
-# Detectar o sistema operacional
-ifeq ($(OS),Windows_NT)
-	DETECTED_OS = Windows
-	RM = del
-	MKDIR = mkdir
-	EXE_EXT = .exe
-else
-	DETECTED_OS = Linux
-	RM = rm -f
-	MKDIR = mkdir -p
-	EXE_EXT =
-endif
+.PHONY: all clean
 
+# --- Configuração Windows ---
 # Nome do executável
-TARGET = main$(EXE_EXT)
+TARGET = main.exe
 
-# Arquivos de origem
+# Caminho da Raylib (SEU CAMINHO)
+RAYLIB_PATH = C:/raylibb
+
+# Arquivos de origem (Inclui todos os módulos)
 SRCS = main.c screens.c game.c graphics.c input.c resources.c levels.c audio.c
 
-# Include e Library paths da raylib
-ifeq ($(DETECTED_OS),Windows)
-	# Tenta múltiplos caminhos comuns no Windows
-	RAYLIB_PATH ?= C:/raylib/raylib
-	CFLAGS = -I$(RAYLIB_PATH)/src
-	LDFLAGS = -L$(RAYLIB_PATH)/src -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32
-	# Se raylib não estiver em C:/raylib, tente ajustar aqui:
-	# RAYLIB_PATH = C:/vcpkg/installed/x64-windows/include
-	# LDFLAGS = -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32
-else
-	RAYLIB_PATH = /usr/local/include
-	CFLAGS = -I$(RAYLIB_PATH)
-	LDFLAGS = -lraylib -lm -lpthread -ldl -lGL -lX11
-endif
+# Flags do Compilador (Caminhos de Inclusão)
+CFLAGS = -I$(RAYLIB_PATH)/include
+
+# Flags do Linker (Bibliotecas)
+LDFLAGS = -L$(RAYLIB_PATH)/lib -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32
 
 # Compilador
 CC = gcc
 
+# --------------------------
+
 # Alvo padrão
 all: $(TARGET)
 
-# Compilar o executável (rápido, sem extrair frames)
+# Compilar o executável
 $(TARGET): $(SRCS)
-	@echo "Compilando..."
+	@echo "Compilando para Windows (Caminho: $(RAYLIB_PATH))..."
 	$(CC) -O3 $(SRCS) $(CFLAGS) $(LDFLAGS) -o $(TARGET)
 	@echo "✓ Executável criado: $(TARGET)"
 
-# Extrair frames (comando opcional)
-ifeq ($(DETECTED_OS),Windows)
-extract-frames:
-	@if not exist "assets\frames" $(MKDIR) assets\frames
-	@for %%f in (assets\*.mp4 assets\*.avi assets\*.mov) do (
-		@if exist "%%f" (
-			@echo Extraindo frames de %%~nf...
-			@ffmpeg -i "%%f" -q:v 2 "assets\frames\%%~nf_%%04d.png" -y >nul 2>&1
-		)
-	)
-else
-extract-frames:
-	@$(MKDIR) assets/frames
-	@for file in assets/*.mp4 assets/*.avi assets/*.mov; do \
-		if [ -f "$$file" ]; then \
-			echo "Extraindo frames de $$file..."; \
-			ffmpeg -i "$$file" -q:v 2 "assets/frames/$$(basename "$$file")_%04d.png" -y 2>/dev/null || true; \
-		fi; \
-	done
-endif
-
-# Limpar
+# Limpar o projeto
 clean:
-	$(RM) $(TARGET) *.o
-	@echo "Projeto limpo"
+	@echo "Limpando..."
+	del $(TARGET) *.o 2>nul || true

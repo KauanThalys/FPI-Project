@@ -8,6 +8,11 @@
 #include "screens.h"
 #include "resources.h"
 
+extern int Game_GetScore(void);
+extern void Game_ResetLevel(int level);
+extern int Game_GetCurrentLevel(void);
+
+//---------------- MENU SCREEN FUNCTIONS ----------------//
 void DrawSolidBlackBackground(void) {
     ClearBackground(BLACK); 
     DrawRectangleGradientV(0, 0, SCREEN_WIDTH, 150, Fade(BLACK, 0.9f), Fade(BLACK, 0.0f));
@@ -288,4 +293,62 @@ void UpdateGameOver(GameScreen *currentScreen) {
     if (CheckCollisionPointRec(GetMousePosition(), btnMenu) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         *currentScreen = MENU;
     }
+}
+
+void DrawGameOver(GameScreen *currentScreen, int finalScore){
+    // Opacidade vermelha (sobre o frame do jogo)
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade((Color){128,0,0}, 0.4f)); 
+    DrawText("GAME OVER", SCREEN_WIDTH/2 - MeasureText("GAME OVER", 60)/2, 100, 60, WHITE);
+    DrawText(TextFormat("SCORE FINAL: %d", finalScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("SCORE FINAL: %d", finalScore), 30)/2, 170, 30, YELLOW);
+    
+    Rectangle btnRestart = {SCREEN_WIDTH/2 - 125, 220, 250, 50};
+    Rectangle btnMenu = {SCREEN_WIDTH/2 - 125, 300, 250, 50};  
+
+    bool hoverRestart = CheckCollisionPointRec(GetMousePosition(), btnRestart); 
+    bool hoverMenu = CheckCollisionPointRec(GetMousePosition(), btnMenu); 
+
+    DrawRectangleRec(btnRestart, hoverRestart ? (Color){255,140,0,255} : (Color){255,69,0,255});
+    DrawText("RESTART", btnRestart.x + 65, btnRestart.y + 15, 20, WHITE);
+
+    DrawRectangleRec(btnMenu, hoverMenu ? (Color){255,140,0,255} : (Color){255,69,0,255});
+    DrawText("MENU", btnMenu.x + 65, btnMenu.y + 15, 20, WHITE);
+    // ... (Desenho dos botões Reiniciar/Menu)
+}
+
+void UpdateLevelClear(GameScreen *currentScreen) {
+    // ... (lógica dos botões)
+    Rectangle btnNext = {SCREEN_WIDTH/2 - 125, 220, 250, 50}; // Y=220
+    Rectangle btnMenu = {SCREEN_WIDTH/2 - 125, 300, 250, 50}; // Y=300
+
+    if (CheckCollisionPointRec(GetMousePosition(), btnNext) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = GAME;
+    }
+    if (CheckCollisionPointRec(GetMousePosition(), btnMenu) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = MENU;
+    }
+    // Se clicou em continuar:
+    if (CheckCollisionPointRec(GetMousePosition(), btnNext) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        *currentScreen = GAME; // main.c fará a transição e chamada de Jogo_IniciarFase()
+    }
+    // ... (lógica do botão Menu)
+}
+
+void DrawLevelClear(GameScreen *currentScreen, int levelScore) {
+    // ... (Design, Opacidade Azul)
+    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade((Color){184,134,11}, 0.4f));
+    DrawText("FASE CONCLUÍDA!", SCREEN_WIDTH/2 - MeasureText("FASE CONCLUÍDA!", 50)/2, 100, 50, GOLD);
+    DrawText(TextFormat("Pontuação: %d", levelScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("Pontuação: %d", levelScore), 30)/2, 170, 30, WHITE);
+    
+    Rectangle btnContinue = {SCREEN_WIDTH/2 - 125, 220, 250, 50}; 
+    Rectangle btnMenu = {SCREEN_WIDTH/2 - 125, 300, 250, 50};    
+
+    bool hoverContinue = CheckCollisionPointRec(GetMousePosition(), btnContinue); 
+    bool hoverMenu = CheckCollisionPointRec(GetMousePosition(), btnMenu); 
+
+    DrawRectangleRec(btnContinue, hoverContinue ? (Color){244,164,96,255} : (Color){139,69,19,255});
+    DrawText("CONTINUAR", btnContinue.x + 65, btnContinue.y + 15, 20, WHITE);
+
+    DrawRectangleRec(btnMenu, hoverMenu ? (Color){244,164,96,255} : (Color){139,69,19,255});
+    DrawText("MENU", btnMenu.x + 65, btnMenu.y + 15, 20, WHITE);
+    // ... (Desenho dos botões Próxima Fase/Menu)
 }

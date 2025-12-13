@@ -228,6 +228,10 @@ static void CheckInteractions(Rectangle playerRect) {
                 } else if (tile == TILE_SPIKES || tile == TILE_FIRE || tile == TILE_FALLING_TRIANGLE || tile == TILE_ROCK) {
                     // Se estiver invulnerável, ignora armadilhas
                     if (estado.player.invulnerable) continue;
+                    if (estado.level > 0) estado.lastValidLevel = estado.level; // Salva o último nível válido antes do Game Over
+                    
+                    estado.player.state = PLAYER_DEAD;
+                    estado.level = -1; // Sinaliza Game Over
                     // Solicita respawn para evitar reinício direto durante iteração de mapa
                     estado.respawnRequested = true;
                     return;
@@ -250,6 +254,7 @@ void Jogo_IniciarFase(int level) {
     if (level < 1) level = 1;
     estado.level = level;
     nivelAtualCarregado = level;
+    estado.lastValidLevel = level;
     timerTriangulos = 0.0f;
     timerGravidade = 0.0f;
 
@@ -302,6 +307,10 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
     // Processa pedido de respawn (se houver) no início do update para reiniciar a fase
     if (estado.respawnRequested) {
         estado.respawnRequested = false;
+        if (estado.level < 0) {
+            *currentScreen = GAME_OVER;
+            return;
+        }
         // Incrementa contador de mortes antes de reiniciar a fase
         estado.deaths += 1;
         Jogo_IniciarFase(estado.level);
@@ -438,3 +447,16 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
 
 EstadoJogo* Jogo_ObterEstado(void) { return &estado; }
 void Jogo_Descarregar(void) { }
+
+int Game_GetCurrentLevel(void) { 
+    return estado.level; 
+}
+
+int Game_GetScore(void) { 
+    return estado.score; 
+}
+
+void Game_ResetLevel(int level) {
+    Jogo_IniciarFase(level);
+    estado.player.state = PLAYER_IDLE;
+}

@@ -75,17 +75,25 @@ int main(void) {
                 break;
 
             case LEVEL_TRANSITION:
-                timerTransicao += dt;
-                if (timerTransicao >= duracaoTransicao) {
+                UpdateLevelClear(&currentScreen);
+
+                // SE UpdateLevelClear mudou para GAME, inicia a próxima fase
+                if (currentScreen == GAME) {
                     EstadoJogo *s = Jogo_ObterEstado();
+                    // O s->level já foi incrementado em game.c
                     Jogo_IniciarFase(s->level);
-                    timerTransicao = 0.0f;
-                    currentScreen = GAME;
                 }
+                else if(currentScreen == MENU) Jogo_Iniciar();
                 break;
             case GAME_OVER:
                     // chama a função de update do painel de Game Over (botões)
                     UpdateGameOver(&currentScreen);
+                    if(currentScreen == GAME){
+                        EstadoJogo *s = Jogo_ObterEstado();
+                        int levelToRestart = (s->level < 1) ? s->lastValidLevel : s->level;
+                        Game_ResetLevel(levelToRestart);
+                    }
+                    else if(currentScreen == MENU) Jogo_Iniciar();;
                     // permitir voltar com ESC diretamente (opcional)
                      if (Input_IsEscapePressed()) currentScreen = MENU;
                 break;
@@ -106,6 +114,10 @@ int main(void) {
         // --- Renderização ---
         BeginDrawing();
         ClearBackground(BLACK);
+
+        if (currentScreen == GAME || currentScreen == GAME_OVER || currentScreen == LEVEL_TRANSITION) {
+        Graphics_DrawGame(NULL); 
+        }
 
         if (currentScreen == MENU) {
             DrawMenuScreen(&currentScreen);
@@ -129,7 +141,10 @@ int main(void) {
             }
         }
         else if (currentScreen == LEVEL_TRANSITION) {
-            Graphics_DrawLevelComplete();
+            DrawLevelClear(&currentScreen, Game_GetScore());
+        }
+        else if (currentScreen == GAME_OVER) {
+            DrawGameOver(&currentScreen, Game_GetScore());
         }
 
         EndDrawing();
