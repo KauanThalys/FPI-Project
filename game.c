@@ -146,6 +146,9 @@ static void init_map_from_layout(const int layout[MAP_H][MAP_W]) {
     estado.keys = 0;
     estado.hasExitKey = false;
     estado.score = 0;
+    // reset camera control
+    estado.cameraForceCenter = false;
+    estado.cameraForceFrames = 0;
 
     for (int y = 0; y < MAP_H; y++) {
         for (int x = 0; x < MAP_W; x++) {
@@ -218,10 +221,13 @@ static void CheckInteractions(Rectangle playerRect) {
                 estado.hasExitKey = true;
             } else if (tile == TILE_TRIGGER) {
                 estado.map[y][x] = TILE_EMPTY; 
-            } else if (tile == TILE_SPIKES || tile == TILE_FIRE || tile == TILE_FALLING_TRIANGLE || tile == TILE_ROCK) {
-                Jogo_IniciarFase(estado.level); 
-                return;
-            } 
+                } else if (tile == TILE_SPIKES || tile == TILE_FIRE || tile == TILE_FALLING_TRIANGLE || tile == TILE_ROCK) {
+                    // Se estiver invulnerável, ignora armadilhas
+                    if (estado.player.invulnerable) continue;
+                    // Solicita respawn para evitar reinício direto durante iteração de mapa
+                    estado.respawnRequested = true;
+                    return;
+                }
             // PORTA: Agora acessível pois IsTileSolid retorna falso para ela
             else if (tile == TILE_DOOR) {
                 if (estado.hasExitKey) {
@@ -234,7 +240,7 @@ static void CheckInteractions(Rectangle playerRect) {
     }
 }
 
-void Jogo_Iniciar(void) { Jogo_IniciarFase(1); }
+void Jogo_Iniciar(void) { estado.deaths = 0; Jogo_IniciarFase(1); }
 
 void Jogo_IniciarFase(int level) {
     if (level < 1) level = 1;
@@ -247,22 +253,56 @@ void Jogo_IniciarFase(int level) {
     init_map_from_layout(layout);
 
     float startX = 100, startY = 100;
+    int startTileX = -1, startTileY = -1;
     bool startFound = false;
     for(int y=0; y<MAP_H; y++){
         for(int x=0; x<MAP_W; x++){
             if(estado.map[y][x] == TILE_START){
+                startTileX = x; startTileY = y;
                 startX = x * TILE_SIZE + (TILE_SIZE - 38)/2;
-                startY = y * TILE_SIZE + (TILE_SIZE - 38);
                 startFound = true; break;
             }
         }
         if(startFound) break;
     }
     estado.player = CreatePlayer(startX, startY);
+    // Posicionar o player sobre o tile de start (em cima, não dentro)
+    if (startFound && startTileY >= 0) {
+        float posY = startTileY * TILE_SIZE - estado.player.height;
+        // Garantir que não saia para fora do mapa verticalmente
+        float maxY = (float)(MAP_H * TILE_SIZE) - estado.player.height;
+        if (posY < 0) posY = 0;
+        if (posY > maxY) posY = maxY;
+        estado.player.position.y = posY;
+    }
+    // Garantir que o player esteja dentro dos limites horizontais do mapa
+    float maxXpx = (float)(MAP_W * TILE_SIZE) - estado.player.width;
+    if (estado.player.position.x < 0) estado.player.position.x = 0;
+    if (estado.player.position.x > maxXpx) estado.player.position.x = maxXpx;
+    // Garantir estado consistente após respawn
+    estado.player.speed = (Vector2){0,0};
+    estado.player.state = PLAYER_IDLE;
+    estado.player.lastState = PLAYER_IDLE;
+    // Tornar o player invulnerável por um curto período após respawn
+    estado.player.invulnerable = true;
+    estado.player.invulnerableTimer = 1.0f; // 1 segundo de invulnerabilidade
+    // Log utile para depuração: coordenadas de spawn
+    TraceLog(LOG_INFO, "[Jogo_IniciarFase] level=%d startX=%.1f startY=%.1f", level, startX, startY);
+    // Forçar recentralização da câmera por alguns frames
+    estado.cameraForceCenter = true;
+    estado.cameraForceFrames = 6; // cerca de 6 frames ~= 0.1s a 60fps
 }
 
 void Jogo_Atualizar(GameScreen *currentScreen) {
     float dt = GetFrameTime();
+    // Processa pedido de respawn (se houver) no início do update para reiniciar a fase
+    if (estado.respawnRequested) {
+        estado.respawnRequested = false;
+        // Incrementa contador de mortes antes de reiniciar a fase
+        estado.deaths += 1;
+        Jogo_IniciarFase(estado.level);
+        return;
+    }
     
     // Transição de Fase
     if (estado.level > nivelAtualCarregado) {
@@ -320,6 +360,15 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
 
     UpdatePlayerAnimation(&estado.player, dt);
 
+    // Atualizar invulnerabilidade do player
+    if (estado.player.invulnerable) {
+        estado.player.invulnerableTimer -= dt;
+        if (estado.player.invulnerableTimer <= 0.0f) {
+            estado.player.invulnerable = false;
+            estado.player.invulnerableTimer = 0.0f;
+        }
+    }
+
     estado.player.speed.y += gravity * dt;
 
     // Colisão X
@@ -374,7 +423,9 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
     playerRect.y = estado.player.position.y;
     CheckInteractions(playerRect);
 
-    if (estado.player.position.y > MAP_H * TILE_SIZE + 200) Jogo_IniciarFase(estado.level);
+    if (estado.player.position.y > MAP_H * TILE_SIZE + 200) {
+        estado.respawnRequested = true;
+    }
 }
 
 EstadoJogo* Jogo_ObterEstado(void) { return &estado; }

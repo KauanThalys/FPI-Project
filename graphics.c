@@ -101,6 +101,19 @@ void Graphics_DrawGame(EstadoJogo *state) {
 
     BeginMode2D(camera);
 
+        // Se houver um pedido de forçar centralização da câmera (após respawn), respeite por alguns frames
+        if (estadoLocal->cameraForceCenter && estadoLocal->cameraForceFrames > 0) {
+            camera.target = (Vector2){
+                estadoLocal->player.position.x + estadoLocal->player.width/2.0f,
+                estadoLocal->player.position.y + estadoLocal->player.height/2.0f
+            };
+            // decrementa contador para que o efeito dure apenas alguns frames
+            estadoLocal->cameraForceFrames--;
+            if (estadoLocal->cameraForceFrames <= 0) {
+                estadoLocal->cameraForceCenter = false;
+            }
+        }
+
         for (int y = 0; y < MAP_H; y++) {
             for (int x = 0; x < MAP_W; x++) {
                 int tile = estadoLocal->map[y][x];
@@ -203,8 +216,19 @@ void Graphics_DrawGame(EstadoJogo *state) {
                         estadoLocal->player.height
                     };
                     
-                    DrawTexturePro(frameTex, source, dest, (Vector2){0, 0}, 0.0f, WHITE);
+                    // Se o player estiver invulnerável, desenha com efeito de piscar (alpha oscilante)
+                    float alpha = 1.0f;
+                    if (estadoLocal->player.invulnerable) {
+                        alpha = 0.5f + 0.5f * sinf((float)GetTime() * 20.0f);
+                    }
+                    DrawTexturePro(frameTex, source, dest, (Vector2){0, 0}, 0.0f, Fade(WHITE, alpha));
                 }
+            }
+            else {
+                // Fallback: desenha um retângulo se não houver animação carregada
+                float alpha = estadoLocal->player.invulnerable ? (0.5f + 0.5f * sinf((float)GetTime() * 20.0f)) : 1.0f;
+                Color c = Fade(estadoLocal->player.color, alpha);
+                DrawRectangle((int)estadoLocal->player.position.x, (int)estadoLocal->player.position.y, (int)estadoLocal->player.width, (int)estadoLocal->player.height, c);
             }
         }
 
@@ -216,4 +240,6 @@ void Graphics_DrawGame(EstadoJogo *state) {
     DrawCircle(27, 85, 8, YELLOW);
     DrawText(TextFormat("x %d", estadoLocal->keys), 45, 78, 20, WHITE);
     if (estadoLocal->hasExitKey) DrawText("CHAVE MESTRA OK!", 20, 110, 20, GREEN);
+    // Mostrar contador de mortes
+    DrawText(TextFormat("Mortes: %d", estadoLocal->deaths), 20, 140, 20, WHITE);
 }
