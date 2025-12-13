@@ -7,6 +7,9 @@
 static Texture2D g_tileset = {0};
 static bool g_tilesetLoaded = false;
 
+static Texture2D g_background = {0};
+static bool g_backgroundLoaded = false;
+
 // Converte caminhos com "/" para o separador correto do SO
 // Aloca nova string, usuário deve fazer free
 static char* NormalizePath(const char *path) {
@@ -181,4 +184,43 @@ void Resources_UpdateMenuVideo(void) {
         g_menuCurrentFrame = (g_menuCurrentFrame + 1) % g_menuFrameCount;
         g_menuFrameTimer = 0.0f;
     }
+}
+
+bool Resources_LoadBackground(const char *path) {
+    if (!path) return false;
+    char *normalized = NormalizePath(path);
+    if (!normalized) return false;
+    
+    if (!FileExists(normalized)) {
+        TraceLog(LOG_WARNING, TextFormat("[Background] Arquivo não encontrado: %s", normalized));
+        free(normalized);
+        return false;
+    }
+    
+    g_background = LoadTexture(normalized);
+    if (g_background.width > 0) {
+        g_backgroundLoaded = true;
+        TraceLog(LOG_INFO, TextFormat("[Background] ✓ Carregado: %s", normalized));
+        free(normalized);
+        return true;
+    }
+    
+    free(normalized);
+    return false;
+}
+
+void Resources_UnloadBackground(void) {
+    if (g_backgroundLoaded) {
+        UnloadTexture(g_background);
+        g_backgroundLoaded = false;
+        memset(&g_background, 0, sizeof(g_background));
+    }
+}
+
+bool Resources_HasBackground(void) {
+    return g_backgroundLoaded;
+}
+
+Texture2D Resources_GetBackground(void) {
+    return g_background;
 }
