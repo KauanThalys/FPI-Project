@@ -29,7 +29,7 @@ int main(void) {
     float particleTimer = 0.0f;
     bool returnToMenu = false;
 
-    Resources_LoadBackground("assets/fundo.jpg");
+    
 
     // --- Intro / transição ---
     float timerIntro = 0.0f;
@@ -46,6 +46,7 @@ int main(void) {
     Resources_LoadTileset("assets/medieval_tileset.png");
     // Carrega os frames do menu (extraídos com ffmpeg)
     Resources_LoadMenuVideo("assets/frames");
+    Resources_LoadBackground("assets/fundo.jpg");
 
     Jogo_Iniciar();
 

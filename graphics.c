@@ -70,7 +70,7 @@ void Graphics_DrawLevelComplete(void) {
 }
 
 // --- Desenho do Jogo  ---
-void Graphics_DrawGame(EstadoJogo *state) {
+oid Graphics_DrawGame(EstadoJogo *state) {
     EstadoJogo *estadoLocal = state ? state : Jogo_ObterEstado();
 
     ClearBackground((Color){30, 30, 35, 255});
