@@ -244,7 +244,7 @@ static void CheckInteractions(Rectangle playerRect) {
     }
 }
 
-void Jogo_Iniciar(void) { Jogo_IniciarFase(1); }
+void Jogo_Iniciar(void) { estado.deaths = 0; Jogo_IniciarFase(1); }
 
 void Jogo_IniciarFase(int level) {
     if (level < 1) level = 1;
@@ -302,6 +302,8 @@ void Jogo_Atualizar(GameScreen *currentScreen) {
     // Processa pedido de respawn (se houver) no início do update para reiniciar a fase
     if (estado.respawnRequested) {
         estado.respawnRequested = false;
+        // Incrementa contador de mortes antes de reiniciar a fase
+        estado.deaths += 1;
         Jogo_IniciarFase(estado.level);
         return;
     }

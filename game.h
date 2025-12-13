@@ -84,6 +84,8 @@ typedef struct {
     int keys;
     bool hasExitKey;
     Player player; 
+    // Contador de mortes ao longo da sessão
+    int deaths;
     // Controle para forçar recentralização da câmera por alguns frames após respawn
     bool cameraForceCenter;
     int cameraForceFrames;

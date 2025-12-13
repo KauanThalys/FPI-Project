@@ -240,4 +240,6 @@ void Graphics_DrawGame(EstadoJogo *state) {
     DrawCircle(27, 85, 8, YELLOW);
     DrawText(TextFormat("x %d", estadoLocal->keys), 45, 78, 20, WHITE);
     if (estadoLocal->hasExitKey) DrawText("CHAVE MESTRA OK!", 20, 110, 20, GREEN);
+    // Mostrar contador de mortes
+    DrawText(TextFormat("Mortes: %d", estadoLocal->deaths), 20, 140, 20, WHITE);
 }
