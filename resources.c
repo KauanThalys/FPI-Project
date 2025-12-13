@@ -7,11 +7,11 @@
 static Texture2D g_tileset = {0};
 static bool g_tilesetLoaded = false;
 
+// ===== BACKGROUND PARALLAX =====
 static Texture2D g_background = {0};
 static bool g_backgroundLoaded = false;
 
 // Converte caminhos com "/" para o separador correto do SO
-// Aloca nova string, usuário deve fazer free
 static char* NormalizePath(const char *path) {
     if (!path) return NULL;
     char *normalized = (char *)malloc(strlen(path) + 1);
@@ -29,8 +29,6 @@ static char* NormalizePath(const char *path) {
     return normalized;
 }
 
-// Tenta carregar a logo do jogo a partir de caminhos comuns.
-// Se encontrar, marca `logo->loaded = true` e mantém a textura em `logo->texture`.
 void Resources_LoadLogo(LogoData *logo) {
     if (!logo) return;
     logo->loaded = false;
@@ -47,8 +45,6 @@ void Resources_LoadLogo(LogoData *logo) {
     }
 }
 
-// Descarrega a textura da logo se ela foi carregada.
-// Sempre chame isso no final do jogo para evitar vazamentos de memória.
 void Resources_UnloadLogo(LogoData *logo) {
     if (!logo) return;
     if (logo->loaded) {
@@ -57,8 +53,6 @@ void Resources_UnloadLogo(LogoData *logo) {
     }
 }
 
-// Tenta carregar um tileset a partir do caminho fornecido.
-// Retorna true se carregou com sucesso.
 bool Resources_LoadTileset(const char *path) {
     if (!path) return false;
     char *normalized = NormalizePath(path);
@@ -89,12 +83,65 @@ Texture2D Resources_GetTileset(void) {
     return g_tileset;
 }
 
-// ===== MENU VIDEO SUPPORT (optimized frame sequence loading) =====
-#define MAX_MENU_FRAMES 60  // Limita carregamento a 200 frames
+// ===== BACKGROUND PARALLAX FUNCTIONS =====
+bool Resources_LoadBackground(const char *path) {
+    if (!path) {
+        TraceLog(LOG_WARNING, "[Background] Path é NULL");
+        return false;
+    }
+    
+    char *normalized = NormalizePath(path);
+    if (!normalized) {
+        TraceLog(LOG_WARNING, "[Background] Falha ao normalizar path");
+        return false;
+    }
+    
+    TraceLog(LOG_INFO, "[Background] Tentando carregar: %s", normalized);
+    
+    if (!FileExists(normalized)) {
+        TraceLog(LOG_WARNING, "[Background] Arquivo não encontrado: %s", normalized);
+        free(normalized);
+        return false;
+    }
+    
+    g_background = LoadTexture(normalized);
+    
+    if (g_background.width > 0 && g_background.height > 0) {
+        g_backgroundLoaded = true;
+        TraceLog(LOG_INFO, "[Background] ✓ Carregado com sucesso: %s (%dx%d)", 
+                 normalized, g_background.width, g_background.height);
+        free(normalized);
+        return true;
+    }
+    
+    TraceLog(LOG_ERROR, "[Background] Falha ao carregar textura: %s", normalized);
+    free(normalized);
+    return false;
+}
+
+void Resources_UnloadBackground(void) {
+    if (g_backgroundLoaded) {
+        UnloadTexture(g_background);
+        g_backgroundLoaded = false;
+        memset(&g_background, 0, sizeof(g_background));
+        TraceLog(LOG_INFO, "[Background] Descarregado");
+    }
+}
+
+bool Resources_HasBackground(void) {
+    return g_backgroundLoaded;
+}
+
+Texture2D Resources_GetBackground(void) {
+    return g_background;
+}
+
+// ===== MENU VIDEO SUPPORT =====
+#define MAX_MENU_FRAMES 60
 static Texture2D *g_menuFrames = NULL;
 static int g_menuFrameCount = 0;
 static int g_menuCurrentFrame = 0;
-static float g_menuFrameTime = 0.125f/15.0f; // 30 FPS
+static float g_menuFrameTime = 0.125f/15.0f;
 static float g_menuFrameTimer = 0.0f;
 static bool g_menuVideoLoaded = false;
 
@@ -104,16 +151,16 @@ bool Resources_LoadMenuVideo(const char *path) {
     char *normalized = NormalizePath(path);
     if (!normalized) return false;
     
-    TraceLog(LOG_INFO, TextFormat("[MenuVideo] Tentando carregar: %s", normalized));
+    TraceLog(LOG_INFO, "[MenuVideo] Tentando carregar: %s", normalized);
     
     if (!DirectoryExists(normalized)) {
-        TraceLog(LOG_WARNING, TextFormat("[MenuVideo] Diretório não encontrado: %s", normalized));
+        TraceLog(LOG_WARNING, "[MenuVideo] Diretório não encontrado: %s", normalized);
         free(normalized);
         return false;
     }
 
     FilePathList list = LoadDirectoryFiles(normalized);
-    TraceLog(LOG_INFO, TextFormat("[MenuVideo] Encontrados %d arquivos em %s", list.count, normalized));
+    TraceLog(LOG_INFO, "[MenuVideo] Encontrados %d arquivos em %s", list.count, normalized);
     
     if (list.count <= 0) {
         UnloadDirectoryFiles(list);
@@ -121,11 +168,9 @@ bool Resources_LoadMenuVideo(const char *path) {
         return false;
     }
 
-    // Allocate space for frames (limited to MAX_MENU_FRAMES)
     int max_to_load = list.count > MAX_MENU_FRAMES ? MAX_MENU_FRAMES : list.count;
     g_menuFrames = (Texture2D *)RL_CALLOC(max_to_load, sizeof(Texture2D));
     
-    // Carrega frames até atingir MAX_MENU_FRAMES
     for (int i = 0; i < list.count && g_menuFrameCount < MAX_MENU_FRAMES; i++) {
         const char *p = list.paths[i];
         if (IsFileExtension(p, ".png") || IsFileExtension(p, ".jpg") || IsFileExtension(p, ".jpeg")) {
@@ -143,7 +188,7 @@ bool Resources_LoadMenuVideo(const char *path) {
         g_menuVideoLoaded = true;
         g_menuCurrentFrame = 0;
         g_menuFrameTimer = 0.0f;
-        TraceLog(LOG_INFO, TextFormat("[MenuVideo] ✓ Carregados %d frames com sucesso", g_menuFrameCount));
+        TraceLog(LOG_INFO, "[MenuVideo] ✓ Carregados %d frames com sucesso", g_menuFrameCount);
         return true;
     }
     
@@ -184,43 +229,4 @@ void Resources_UpdateMenuVideo(void) {
         g_menuCurrentFrame = (g_menuCurrentFrame + 1) % g_menuFrameCount;
         g_menuFrameTimer = 0.0f;
     }
-}
-
-bool Resources_LoadBackground(const char *path) {
-    if (!path) return false;
-    char *normalized = NormalizePath(path);
-    if (!normalized) return false;
-    
-    if (!FileExists(normalized)) {
-        TraceLog(LOG_WARNING, TextFormat("[Background] Arquivo não encontrado: %s", normalized));
-        free(normalized);
-        return false;
-    }
-    
-    g_background = LoadTexture(normalized);
-    if (g_background.width > 0) {
-        g_backgroundLoaded = true;
-        TraceLog(LOG_INFO, TextFormat("[Background] ✓ Carregado: %s", normalized));
-        free(normalized);
-        return true;
-    }
-    
-    free(normalized);
-    return false;
-}
-
-void Resources_UnloadBackground(void) {
-    if (g_backgroundLoaded) {
-        UnloadTexture(g_background);
-        g_backgroundLoaded = false;
-        memset(&g_background, 0, sizeof(g_background));
-    }
-}
-
-bool Resources_HasBackground(void) {
-    return g_backgroundLoaded;
-}
-
-Texture2D Resources_GetBackground(void) {
-    return g_background;
 }
