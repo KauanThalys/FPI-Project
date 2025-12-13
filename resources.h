@@ -26,4 +26,11 @@ void Resources_UnloadMenuVideo(void);
 bool Resources_HasMenuVideo(void);
 Texture2D Resources_GetMenuVideoTexture(void);
 void Resources_UpdateMenuVideo(void);
+
+// Background parallax para as fases
+bool Resources_LoadBackground(const char *path);
+void Resources_UnloadBackground(void);
+bool Resources_HasBackground(void);
+Texture2D Resources_GetBackground(void);
+
 #endif // RESOURCES_H

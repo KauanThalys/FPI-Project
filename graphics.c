@@ -99,21 +99,64 @@ void Graphics_DrawGame(EstadoJogo *state) {
         if (camera.target.y > maxY) camera.target.y = maxY;
     }
 
-    BeginMode2D(camera);
+    // Se houver um pedido de forçar centralização da câmera (após respawn), respeite por alguns frames
+    if (estadoLocal->cameraForceCenter && estadoLocal->cameraForceFrames > 0) {
+        camera.target = (Vector2){
+            estadoLocal->player.position.x + estadoLocal->player.width/2.0f,
+            estadoLocal->player.position.y + estadoLocal->player.height/2.0f
+        };
+        estadoLocal->cameraForceFrames--;
+        if (estadoLocal->cameraForceFrames <= 0) {
+            estadoLocal->cameraForceCenter = false;
+        }
+    }
 
-        // Se houver um pedido de forçar centralização da câmera (após respawn), respeite por alguns frames
-        if (estadoLocal->cameraForceCenter && estadoLocal->cameraForceFrames > 0) {
-            camera.target = (Vector2){
-                estadoLocal->player.position.x + estadoLocal->player.width/2.0f,
-                estadoLocal->player.position.y + estadoLocal->player.height/2.0f
-            };
-            // decrementa contador para que o efeito dure apenas alguns frames
-            estadoLocal->cameraForceFrames--;
-            if (estadoLocal->cameraForceFrames <= 0) {
-                estadoLocal->cameraForceCenter = false;
+    // ===== DESENHAR FUNDO PARALLAX =====
+    if (Resources_HasBackground()) {
+        Texture2D bg = Resources_GetBackground();
+        
+        // Fator parallax: quanto menor, mais lento o fundo se move (0.3 = 30% da velocidade da câmera)
+        float parallaxFactor = 0.3f;
+        
+        // Calcular deslocamento do fundo baseado na posição da câmera
+        float bgOffsetX = camera.target.x * parallaxFactor;
+        float bgOffsetY = camera.target.y * parallaxFactor;
+        
+        // Escala para cobrir a tela inteira
+        float screenW = GetScreenWidth();
+        float screenH = GetScreenHeight();
+        float scaleX = screenW / bg.width;
+        float scaleY = screenH / bg.height;
+        float scale = fmaxf(scaleX, scaleY) * 1.2f; // 1.2x para garantir cobertura
+        
+        // Dimensões escaladas
+        float bgWidth = bg.width * scale;
+        float bgHeight = bg.height * scale;
+        
+        // Posição base para centralizar
+        float baseX = camera.target.x - screenW/2.0f;
+        float baseY = camera.target.y - screenH/2.0f;
+        
+        // Repetir o fundo em tiles para criar efeito infinito
+        int tilesX = (int)(MAP_W * TILE_SIZE / bgWidth) + 3;
+        int tilesY = (int)(MAP_H * TILE_SIZE / bgHeight) + 3;
+        
+        for (int ty = -1; ty < tilesY; ty++) {
+            for (int tx = -1; tx < tilesX; tx++) {
+                float drawX = (tx * bgWidth) - fmodf(bgOffsetX, bgWidth);
+                float drawY = (ty * bgHeight) - fmodf(bgOffsetY, bgHeight);
+                
+                Rectangle source = {0, 0, (float)bg.width, (float)bg.height};
+                Rectangle dest = {drawX, drawY, bgWidth, bgHeight};
+                
+                DrawTexturePro(bg, source, dest, (Vector2){0, 0}, 0.0f, Fade(WHITE, 0.8f));
             }
         }
+    }
 
+    BeginMode2D(camera);
+
+        // Desenho do mapa (tiles) - continua igual
         for (int y = 0; y < MAP_H; y++) {
             for (int x = 0; x < MAP_W; x++) {
                 int tile = estadoLocal->map[y][x];
@@ -164,7 +207,7 @@ void Graphics_DrawGame(EstadoJogo *state) {
             }
         }
 
-        // Desenhar sprite animado do personagem
+        // Desenhar sprite animado do personagem (continua igual)
         if (estadoLocal->player.spritesLoaded) {
             SpriteAnimation *currentAnim = NULL;
             
@@ -199,14 +242,12 @@ void Graphics_DrawGame(EstadoJogo *state) {
                 Texture2D frameTex = currentAnim->frames[frame];
                 
                 if (frameTex.width > 0 && frameTex.height > 0) {
-                    // Source: full frame texture
                     Rectangle source = {
                         0, 0,
                         estadoLocal->player.facingRight ? (float)frameTex.width : -(float)frameTex.width,
                         (float)frameTex.height
                     };
                     
-                    // Destination: scale to fit player bounding box (preserve aspect, center horizontally)
                     float scale = estadoLocal->player.height / (float)frameTex.height;
                     float drawW = frameTex.width * scale;
                     Rectangle dest = {
@@ -216,7 +257,6 @@ void Graphics_DrawGame(EstadoJogo *state) {
                         estadoLocal->player.height
                     };
                     
-                    // Se o player estiver invulnerável, desenha com efeito de piscar (alpha oscilante)
                     float alpha = 1.0f;
                     if (estadoLocal->player.invulnerable) {
                         alpha = 0.5f + 0.5f * sinf((float)GetTime() * 20.0f);
@@ -225,7 +265,6 @@ void Graphics_DrawGame(EstadoJogo *state) {
                 }
             }
             else {
-                // Fallback: desenha um retângulo se não houver animação carregada
                 float alpha = estadoLocal->player.invulnerable ? (0.5f + 0.5f * sinf((float)GetTime() * 20.0f)) : 1.0f;
                 Color c = Fade(estadoLocal->player.color, alpha);
                 DrawRectangle((int)estadoLocal->player.position.x, (int)estadoLocal->player.position.y, (int)estadoLocal->player.width, (int)estadoLocal->player.height, c);
@@ -234,12 +273,12 @@ void Graphics_DrawGame(EstadoJogo *state) {
 
     EndMode2D();
 
+    // HUD (continua igual)
     DrawText(TextFormat("Score: %04d", estadoLocal->score), 20, 20, 20, WHITE);
     DrawRectangle(20, 50, 15, 15, GOLD);
     DrawText(TextFormat("x %d / %d", estadoLocal->collectedTreasures, estadoLocal->totalTreasures), 45, 48, 20, WHITE);
     DrawCircle(27, 85, 8, YELLOW);
     DrawText(TextFormat("x %d", estadoLocal->keys), 45, 78, 20, WHITE);
     if (estadoLocal->hasExitKey) DrawText("CHAVE MESTRA OK!", 20, 110, 20, GREEN);
-    // Mostrar contador de mortes
     DrawText(TextFormat("Mortes: %d", estadoLocal->deaths), 20, 140, 20, WHITE);
 }

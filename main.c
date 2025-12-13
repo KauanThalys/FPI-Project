@@ -29,6 +29,8 @@ int main(void) {
     float particleTimer = 0.0f;
     bool returnToMenu = false;
 
+    Resources_LoadBackground("assets/fundo.jpg");
+
     // --- Intro / transição ---
     float timerIntro = 0.0f;
     const float duracaoIntro = 3.0f;
@@ -138,6 +140,7 @@ int main(void) {
     Resources_UnloadMenuVideo();
     Audio_Unload();
     CloseAudioDevice();
+    Resources_UnloadBackground();
     CloseWindow();
 
     return 0;
